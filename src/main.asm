@@ -1,4 +1,5 @@
 INCLUDE "hardware.inc"
+INCLUDE "utils/memory-utils.asm"
 
 SECTION "Header", ROM0[$100]
 
@@ -395,20 +396,6 @@ GetTileByPixel:
 ; @return z: set if a is a wall.
 IsWallTile:
     cp a, $01
-    ret
-
-; Copy bytes from one area to another.
-; @param de: Source
-; @param hl: Destination
-; @param bc: Length
-Memcopy:
-    ld a, [de]
-    ld [hli], a
-    inc de
-    dec bc
-    ld a, b
-    or a, c
-    jp nz, Memcopy
     ret
 
 SECTION "Tile data", ROM0
