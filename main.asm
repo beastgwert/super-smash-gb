@@ -49,16 +49,16 @@ ClearOam:
 
     ; Initialize the player in OAM
     ld hl, _OAMRAM
-    ld a, 128 + 16
+    ld a, 64 + 16
     ld [hli], a
-    ld a, 16 + 8
+    ld a, 64 + 8
     ld [hli], a
     ld a, 0
     ld [hli], a
     ld [hli], a
 
 	; Turn the LCD on
-	ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON
+	ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON | LCDCF_OBJ16
 	ld [rLCDC], a
 
 	; During the first (blank) frame, initialize display registers
@@ -66,6 +66,13 @@ ClearOam:
 	ld [rBGP], a
     ld a, %11100100
     ld [rOBP0], a
+
+    ; Initialize global variables
+    ld a, 0
+    ld [wFrameCounter], a
+    ld [wCurKeys], a
+    ld [wNewKeys], a
+    ld [wInverseVelocity], a
 
 Main:
     ld a, [rLY]
@@ -79,60 +86,124 @@ WaitVBlank2:
     ; Check the current keys every frame and move left or right.
     call UpdateKeys
 
+    call UpdatePlayer
+
     call CheckMovement
+
     jp Main
+
+; Update the player's position based on their velocity
+UpdatePlayer:
+    ld a, [_OAMRAM+1]
+    ld b, a
+    ld a, [_OAMRAM]
+    ld c, a
+    call IsGrounded
+    jp nz, InAir
+    ; Set velocity to 0 if on ground
+    ld a, [wPlayerDirection]
+    cp a, 0
+    ret nz
+InAir:
+    ld a, [wInverseVelocity]
+    cp a, 0
+    jp nz, NonZeroVelocity
+    ld a, 10
+    ld [wInverseVelocity], a
+    ld a, 1
+    ld [wPlayerDirection], a
+NonZeroVelocity:
+    ld a, [wInverseVelocity]
+    ld d, a
+    ld a, [wFrameCounter]
+    inc a
+    cp a, d
+    jp z, UpdatePosition
+    ld [wFrameCounter], a
+    ret
+UpdatePosition:
+    xor a
+    ld [wFrameCounter], a
+    ld a, [wPlayerDirection]
+    cp a, 0
+    jp z, MovesUp
+    ld a, [wInverseVelocity]
+    cp a, 1
+    jp z, MaximumVelocity
+    ; Apply gravity
+    dec a
+    ld [wInverseVelocity], a
+MaximumVelocity:
+    ld a, [_OAMRAM]
+    inc a
+    ld c, a
+    ld [_OAMRAM], a
+    ld a, [_OAMRAM+1]
+    ld b, a
+    ; Check if player hits ground
+    call IsGrounded
+    jp z, HitsGround
+    ret
+HitsGround:
+    xor a
+    ld [wInverseVelocity], a
+    ret
+MovesUp:
+    ld a, [_OAMRAM+1]
+    sub a, 8
+    ld b, a
+    ld a, [_OAMRAM]
+    sub a, 16 + 1
+    ld c, a
+    ; Check if player hits ceiling
+    call CheckCollision
+    jp z, HitsCeiling
+    ld a, [_OAMRAM]
+    dec a
+    ld [_OAMRAM], a
+    ; Update velocity
+    ld a, [wInverseVelocity]
+    cp a, 10
+    jp z, HitsCeiling
+    ; Apply gravity
+    inc a
+    ld [wInverseVelocity], a
+    ret
+HitsCeiling:
+    xor a
+    ld [wInverseVelocity], a
+    ret
+
+; Check if player is on the ground
+; @param b: X (bottom right)
+; @param c: Y (bottom right)
+; @return z: set if grounded
+IsGrounded:
+    ; ld a, c
+    ; inc a
+    ; ld c, a
+
+    ; Check if it collides with a wall
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+    ret z
+
+    ; Check for bottom left corner
+    ld a, b
+    sub a, 8
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+
+    ; ld a, c
+    ; dec a
+    ; ld c, a
+    ret
 
 ; Move if an arrow key was pressed
 CheckMovement:
-; Check the up button.
-CheckUp:
-    ld a, [wCurKeys]
-    and a, PADF_UP
-    jp z, CheckDown
-Up:
-    ; Move the player one pixel up.
-    ld a, [_OAMRAM]
-    dec a
-    ; If we've already hit the edge of the playfield, don't move.
-    cp a, 0 + 15
-    jp z, CheckLeft
-    ; Check for collision with wall
-    sub a, 16
-    ld c, a
-    ld a, [_OAMRAM + 1]
-    sub a, 8
-    ld b, a
-    call CheckCollision
-    jp z, CheckLeft
-    ld a, [_OAMRAM]
-    dec a
-    ld [_OAMRAM], a
-    jp CheckLeft
-
-; Check the down button.
-CheckDown:
-    ld a, [wCurKeys]
-    and a, PADF_DOWN
-    jp z, CheckLeft
-Down:
-    ; Move the player one pixel down.
-    ld a, [_OAMRAM]
-    inc a
-    ; If we've already hit the edge of the playfield, don't move.
-    cp a, 145
-    jp z, CheckLeft
-    ; Check for collision with wall
-    sub a, 16
-    ld c, a
-    ld a, [_OAMRAM + 1]
-    sub a, 8
-    ld b, a
-    call CheckCollision
-    jp z, CheckLeft
-    ld a, [_OAMRAM]
-    inc a
-    ld [_OAMRAM], a
-    jp CheckLeft
 
 ; Check the left button.
 CheckLeft:
@@ -145,7 +216,7 @@ Left:
     dec a
     ; If we've already hit the edge of the playfield, don't move.
     cp a, 0 + 7
-    ret z
+    jp z, CheckUp
     ; Check for collision with wall
     sub a, 8
     ld b, a
@@ -153,24 +224,24 @@ Left:
     sub a, 16
     ld c, a
     call CheckCollision
-    ret z
+    jp z, CheckUp
     ld a, [_OAMRAM + 1]
     dec a
     ld [_OAMRAM + 1], a
-    ret
+    jp CheckUp
 
 ; Check the right button.
 CheckRight:
     ld a, [wCurKeys]
     and a, PADF_RIGHT
-    ret z
+    jp z, CheckUp
 Right:
     ; Move the player one pixel to the right.
     ld a, [_OAMRAM + 1]
     inc a
     ; If we've already hit the edge of the playfield, don't move.
     cp a, 161
-    ret z
+    jp z, CheckUp
     ; Check for collision with wall
     sub a, 8
     ld b, a
@@ -178,10 +249,32 @@ Right:
     sub a, 16
     ld c, a
     call CheckCollision
-    ret z
+    jp z, CheckUp
     ld a, [_OAMRAM + 1]
     inc a
     ld [_OAMRAM + 1], a
+    jp CheckUp
+
+; Check the up button.
+CheckUp:
+    ld a, [wCurKeys]
+    and a, PADF_UP
+    ret z
+Up:
+    ; Jump if on the ground
+    ld a, [_OAMRAM+1]
+    ld b, a
+    ld a, [_OAMRAM]
+    ld c, a
+    call IsGrounded
+    ret nz
+    ; ld a, [wInverseVelocity]
+    ; cp a, 0
+    ; ret nz
+    xor a
+    ld [wPlayerDirection], a
+    ld a, 1
+    ld [wInverseVelocity], a
     ret
 
 UpdateKeys:
@@ -220,10 +313,10 @@ UpdateKeys:
 .knownret
     ret 
 
-; Check if a pixel position collides with a wall
-; @param b: X
-; @param c: Y
-; @return z: set if (X, Y) is in a wall
+; Check if a player's bounding box collides with a wall
+; @param b: X (upper left)
+; @param c: Y (upper left)
+; @return z: set if collision
 CheckCollision:
     call GetTileByPixel
     ld a, [hl]
@@ -232,6 +325,13 @@ CheckCollision:
     ld a, b
     add a, 7
     ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+    ret z
+    ld a, c
+    add a, 8
+    ld c, a
     call GetTileByPixel
     ld a, [hl]
     call IsWallTile
@@ -249,6 +349,14 @@ CheckCollision:
     call GetTileByPixel
     ld a, [hl]
     call IsWallTile
+    ret z
+    ld a, c
+    sub a, 7
+    ld c, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+    ret z
     ret
 
 ; Convert a pixel position to a tilemap address
@@ -326,24 +434,37 @@ Tilemap:
 	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
 	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
 	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
 	db $00, $00, $01, $01, $01, $01, $01, $00, $00, $00, $00, $00, $00, $01, $01, $01, $01, $01, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
 	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
 	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
 	db $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01,  0,0,0,0,0,0,0,0,0,0,0,0
 TilemapEnd:
 
 Player:
-    dw `00033000
-    dw `00300300
-    dw `00300300
-    dw `00033000
-    dw `03333330
-    dw `00033000
-    dw `00300300
+    dw `00333300
     dw `03000030
+    dw `03000030
+    dw `03000030
+    dw `03000030
+    dw `00333300
+    dw `00033000
+    dw `00033000
+    dw `00033000
+    dw `33333333
+    dw `00033000
+    dw `00033000
+    dw `00033000
+    dw `00333300
+    dw `03300330
+    dw `33000033
 PlayerEnd:
 
 SECTION "Input Variables", WRAM0
 wCurKeys: db
 wNewKeys: db
+
+SECTION "Player Data", WRAM0
+wInverseVelocity: db
+wFrameCounter: db
+wPlayerDirection: db
