@@ -1,5 +1,5 @@
 INCLUDE "hardware.inc"
-INCLUDE "utils/memory-utils.asm"
+INCLUDE "arena-background.asm"
 
 SECTION "Header", ROM0[$100]
 
@@ -28,11 +28,12 @@ WaitVBlank:
     ld bc, TilesEnd - Tiles
     call Memcopy
 
+    call InitializeBackground
     ; Copy the tilemap
-    ld de, Tilemap
-    ld hl, $9800
-    ld bc, TilemapEnd - Tilemap
-    call Memcopy
+    ; ld de, Tilemap
+    ; ld hl, $9800
+    ; ld bc, TilemapEnd - Tilemap
+    ; call Memcopy
 
     ; Copy the player
     ld de, Player
@@ -59,7 +60,7 @@ ClearOam:
     ld [hli], a
 
 	; Turn the LCD on
-	ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON | LCDCF_OBJ16
+	ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON | LCDCF_OBJ16 | LCDCF_BG8000
 	ld [rLCDC], a
 
 	; During the first (blank) frame, initialize display registers
