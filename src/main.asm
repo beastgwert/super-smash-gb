@@ -9,7 +9,7 @@ SECTION "Header", ROM0[$100]
 
 EntryPoint:
 	; Shut down audio circuitry
-	ld a, 0
+	xor a
 	ld [rNR52], a
 
 	; Do not turn the LCD off outside of VBlank
@@ -19,7 +19,7 @@ WaitVBlank:
 	jp c, WaitVBlank
 
 	; Turn the LCD off
-	ld a, 0
+	xor a
 	ld [rLCDC], a
 
     ; Copy the tile data
@@ -54,7 +54,7 @@ ClearOam:
     ld [hli], a
     ld a, 64 + 8
     ld [hli], a
-    ld a, 0
+    xor a
     ld [hli], a
     ld [hli], a
 
@@ -69,18 +69,18 @@ ClearOam:
     ld [rOBP0], a
 
     ; Initialize global variables
-    ld a, 0
+    xor a
     ld [wFrameCounter], a
     ld [wCurKeys], a
     ld [wNewKeys], a
     ld [wInverseVelocity], a
 
 Main:
-    ld a, [rLY]
+    ldh a, [rLY]
 	cp 144
 	jp nc, Main
 WaitVBlank2:
-	ld a, [rLY]
+	ldh a, [rLY]
 	cp 144
 	jp c, WaitVBlank2
 
@@ -136,7 +136,7 @@ UpdatePosition:
     ld [wInverseVelocity], a
 MaximumVelocity:
     ld a, [_OAMRAM]
-    inc a
+    add a, 2
     ld c, a
     ld [_OAMRAM], a
     ld a, [_OAMRAM+1]
@@ -148,6 +148,7 @@ MaximumVelocity:
 HitsGround:
     xor a
     ld [wInverseVelocity], a
+    ld [wFrameCounter], a
     ret
 MovesUp:
     ld a, [_OAMRAM+1]
@@ -160,13 +161,14 @@ MovesUp:
     call CheckCollision
     jp z, HitsCeiling
     ld a, [_OAMRAM]
-    dec a
+    sub a, 2
     ld [_OAMRAM], a
     ; Update velocity
     ld a, [wInverseVelocity]
     cp a, 10
     jp z, HitsCeiling
     ; Apply gravity
+    ld a, [wInverseVelocity]
     inc a
     ld [wInverseVelocity], a
     ret
@@ -180,10 +182,6 @@ HitsCeiling:
 ; @param c: Y (bottom right)
 ; @return z: set if grounded
 IsGrounded:
-    ; ld a, c
-    ; inc a
-    ; ld c, a
-
     ; Check if it collides with a wall
     call GetTileByPixel
     ld a, [hl]
@@ -198,9 +196,6 @@ IsGrounded:
     ld a, [hl]
     call IsWallTile
 
-    ; ld a, c
-    ; dec a
-    ; ld c, a
     ret
 
 ; Move if an arrow key was pressed
@@ -269,11 +264,9 @@ Up:
     ld c, a
     call IsGrounded
     ret nz
-    ; ld a, [wInverseVelocity]
-    ; cp a, 0
-    ; ret nz
     xor a
     ld [wPlayerDirection], a
+    ld [wFrameCounter], a
     ld a, 1
     ld [wInverseVelocity], a
     ret
