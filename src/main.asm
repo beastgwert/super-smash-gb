@@ -379,12 +379,12 @@ GetTileByPixel:
 ; @return z: set if a is a wall.
 IsWallTile:
     ; top platform
-    cp a, $30
-    ret z
-    cp a, $31
-    ret z
-    cp a, $32
-    ret z
+    ; cp a, $30
+    ; ret z
+    ; cp a, $31
+    ; ret z
+    ; cp a, $32
+    ; ret z
     ; left platform
     ; cp a, $58
     ; ret z
@@ -424,6 +424,7 @@ IsWallTile:
     ; ret z
     ; cp a, $99
     ; ret z
+    cp a, $01
     ret
 
 SECTION "Player Tiles", ROM0
