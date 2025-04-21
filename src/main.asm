@@ -299,7 +299,7 @@ Right:
 CheckUp:
     ld a, [wCurKeys]
     and a, PADF_UP
-    ret z
+    jp z, CheckDown
 Up:
     ; Jump if on the ground
     ld a, [wShadowOAM+1]
@@ -314,6 +314,24 @@ Up:
     ld [wGravityCounter], a
     ld a, 1
     ld [wInverseVelocity], a
+    ret
+
+; Check the down button.
+CheckDown:
+    ld a, [wCurKeys]
+    and a, PADF_DOWN
+    ret z
+Down:
+    ; Move down if on the ground
+    ld a, [wShadowOAM+1]
+    ld b, a
+    ld a, [wShadowOAM]
+    ld c, a
+    call IsGrounded
+    ret nz
+    ld a, [wShadowOAM]
+    add a, 2
+    ld [wShadowOAM], a
     ret
 
 ; When A is pressed, toggle between default sprite (tile 0) and attack sprite (tile 2)
@@ -420,6 +438,15 @@ UpdateKeys:
 ; @param c: Y
 ; @return hl: tile address
 GetTileByPixel:
+    ld a, c
+    and a, %111
+    cp a, 0
+    jp z, ContinueCalc
+    cp a, 1
+    jp z, ContinueCalc
+    ld hl, 0
+    ret
+ContinueCalc:
     ; First, we need to divide by 8 to convert a pixel position to a tile position.
     ; After this we want to multiply the Y position by 32.
     ; These operations effectively cancel out so we only need to mask the Y value.
@@ -471,6 +498,12 @@ IsWallTile:
     cp a, $6F
     ret z
     ; base platform
+    call IsBaseTile
+    ret
+
+; @param a: tile ID
+; @return z: set if a is a base.
+IsBaseTile:
     cp a, $9E
     ret z
     cp a, $9F
@@ -494,8 +527,6 @@ IsWallTile:
     cp a, $A8
     ret z
     cp a, $A9
-    ret z
-    ; cp a, $01
     ret
 
 UpdateSprite:
