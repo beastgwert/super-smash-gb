@@ -5,5 +5,5 @@ all:
 
 character-selection: 
 	rgbasm -o character-selection.o character-selection.asm
-	rgblink -o super-smash.gb character-selection.o
-	rgbfix -v -p 0xFF super-smash.gb	
+	rgblink -o super-smash-char-select.gb character-selection.o
+	rgbfix -v -p 0xFF super-smash-char-select.gb	

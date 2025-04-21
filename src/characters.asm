@@ -38,12 +38,12 @@ InitializeCharacters::
     
     ; Load michael regular sprite data
     ld de, michaelTileData
-    ld hl, CHARACTER_TILES_START
+    ld hl, CHARACTER_TILES_START + 16 * 12
     ld bc, michaelTileDataEnd - michaelTileData
     call Memcopy
     
     ld de, michaelAttackTileData
-    ld hl, CHARACTER_TILES_START + 16 * 2 ; each tile is 16 bytes, and each character is two tiles
+    ld hl, CHARACTER_TILES_START + 16 * 14 ; each tile is 16 bytes, and each character is two tiles
     ld bc, michaelAttackTileDataEnd - michaelAttackTileData
     call Memcopy
     
@@ -58,32 +58,32 @@ InitializeCharacters::
     call Memcopy
     
     ld de, christopherTileData
-    ld hl, CHARACTER_TILES_START + 16 * 8
+    ld hl, CHARACTER_TILES_START + 16 * 0
     ld bc, christopherTileDataEnd - christopherTileData
     call Memcopy
     
     ld de, christopherAttackTileData
-    ld hl, CHARACTER_TILES_START + 16 * 10
+    ld hl, CHARACTER_TILES_START + 16 * 2
     ld bc, christopherAttackTileDataEnd - christopherAttackTileData
     call Memcopy
 
     ld de, neilTileData
-    ld hl, CHARACTER_TILES_START + 16 * 12
+    ld hl, CHARACTER_TILES_START + 16 * 16
     ld bc, neilTileDataEnd - neilTileData
     call Memcopy
     
     ld de, neilAttackTileData
-    ld hl, CHARACTER_TILES_START + 16 * 14
+    ld hl, CHARACTER_TILES_START + 16 * 18
     ld bc, neilAttackTileDataEnd - neilAttackTileData
     call Memcopy
     
     ld de, calebTileData
-    ld hl, CHARACTER_TILES_START + 16 * 16
+    ld hl, CHARACTER_TILES_START + 16 * 8
     ld bc, calebTileDataEnd - calebTileData
     call Memcopy
     
     ld de, calebAttackTileData
-    ld hl, CHARACTER_TILES_START + 16 * 18
+    ld hl, CHARACTER_TILES_START + 16 * 10
     ld bc, calebAttackTileDataEnd - calebAttackTileData
     call Memcopy
     

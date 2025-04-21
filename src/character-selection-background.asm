@@ -12,7 +12,7 @@ CharacterSelectionTileDataEnd:
 InitializeCharacterSelectionBackground::
     ; Copy the tile data
 	ld de, CharacterSelectionTileData ; de contains the address where data will be copied from;
-	ld hl, $8100 ; hl contains the address where data will be copied to;
+	ld hl, $8200 ; hl contains the address where data will be copied to;
 	ld bc, CharacterSelectionTileDataEnd - CharacterSelectionTileData ; bc contains how many bytes we have to copy.
     call Memcopy
 
@@ -24,6 +24,6 @@ InitializeCharacterSelectionBackground::
     ld de, CharacterSelectionMap        ; Source: our tilemap data
     ld hl, $9800           ; Destination: the tilemap area in VRAM
     ld bc, CharacterSelectionMapEnd - CharacterSelectionMap  ; Length of our tilemap data
-    call MemcopyOffset152  ; Return when done
+    call MemcopyOffset32  ; Return when done
     ret
 
