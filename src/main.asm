@@ -1,6 +1,7 @@
 INCLUDE "hardware.inc"
 INCLUDE "arena-background.asm"
 INCLUDE "characters.asm"
+INCLUDE "utils/sprobjs_lib.asm"
 
 SECTION "Header", ROM0[$100]
 
@@ -26,22 +27,21 @@ WaitVBlank:
     call InitializeBackground
 
     call InitializeCharacters
-    ; Copy the player
-    ; ld de, Player
-    ; ld hl, $8000
-    ; ld bc, PlayerEnd - Player
-    ; call Memcopy
 
-    ld a, 0
+    ; Initilize Sprite Object Library.
+    call InitSprObjLib
+
+    ; Reset hardware OAM
+    xor a, a
     ld b, 160
-    ld hl, _OAMRAM
-ClearOam:
+    ld hl, wShadowOAM
+.resetOAM
     ld [hli], a
     dec b
-    jp nz, ClearOam
+    jr nz, .resetOAM
 
     ; Initialize the player in OAM
-    ld hl, _OAMRAM
+    ld hl, wShadowOAM
     ld a, 16 + 16
     ld [hli], a
     ld a, 80 + 8
@@ -66,15 +66,13 @@ ClearOam:
     ld [wCurKeys], a
     ld [wNewKeys], a
     ld [wInverseVelocity], a
+    ld [wGravityCounter], a
+    ld [wSpriteChangeTimer], a
+    ld [wOriginalTile], a
+    ld [wSpeedCounter], a
 
 Main:
-    ldh a, [rLY]
-	cp 144
-	jp nc, Main
-WaitVBlank2:
-	ldh a, [rLY]
-	cp 144
-	jp c, WaitVBlank2
+    call ResetShadowOAM
 
     ; Check the current keys every frame and move left or right.
     call UpdateKeys
@@ -83,13 +81,26 @@ WaitVBlank2:
 
     call CheckMovement
 
+    call UpdateSprite
+
+    ldh a, [rLY]
+	cp 144
+	jp nc, Main
+WaitVBlank2:
+	ldh a, [rLY]
+	cp 144
+	jp c, WaitVBlank2
+
+    ld a, HIGH(wShadowOAM)
+    call hOAMDMA
+
     jp Main
 
 ; Update the player's position based on their velocity
 UpdatePlayer:
-    ld a, [_OAMRAM+1]
+    ld a, [wShadowOAM+1]
     ld b, a
-    ld a, [_OAMRAM]
+    ld a, [wShadowOAM]
     ld c, a
     call IsGrounded
     jp nz, InAir
@@ -101,7 +112,7 @@ InAir:
     ld a, [wInverseVelocity]
     cp a, 0
     jp nz, NonZeroVelocity
-    ld a, 10
+    ld a, 4
     ld [wInverseVelocity], a
     ld a, 1
     ld [wPlayerDirection], a
@@ -123,15 +134,30 @@ UpdatePosition:
     ld a, [wInverseVelocity]
     cp a, 1
     jp z, MaximumVelocity
+    ; Check if gravity counter is correct
+    ld a, [wGravityCounter]
+    inc a
+    ld [wGravityCounter], a
+    ld b, a
+    ld a, [wInverseVelocity]
+    ld c, a
+    ld a, 6
+    sub a, c
+    cp a, b
+    jp nz, MaximumVelocity
+    xor a
+    ld [wGravityCounter], a
     ; Apply gravity
+    ld a, [wInverseVelocity]
     dec a
     ld [wInverseVelocity], a
 MaximumVelocity:
-    ld a, [_OAMRAM]
+    ; Move down
+    ld a, [wShadowOAM]
     add a, 2
     ld c, a
-    ld [_OAMRAM], a
-    ld a, [_OAMRAM+1]
+    ld [wShadowOAM], a
+    ld a, [wShadowOAM+1]
     ld b, a
     ; Check if player hits ground
     call IsGrounded
@@ -141,24 +167,31 @@ HitsGround:
     xor a
     ld [wInverseVelocity], a
     ld [wFrameCounter], a
+    ld [wGravityCounter], a
     ret
 MovesUp:
-    ld a, [_OAMRAM+1]
-    sub a, 8
-    ld b, a
-    ld a, [_OAMRAM]
-    sub a, 16 + 1
-    ld c, a
-    ; Check if player hits ceiling
-    call CheckCollision
-    jp z, HitsCeiling
-    ld a, [_OAMRAM]
+    ; Move up
+    ld a, [wShadowOAM]
     sub a, 2
-    ld [_OAMRAM], a
+    ld [wShadowOAM], a
     ; Update velocity
     ld a, [wInverseVelocity]
-    cp a, 10
+    cp a, 4
     jp z, HitsCeiling
+    ; Check if gravity counter is correct
+    ld a, [wGravityCounter]
+    inc a
+    ld [wGravityCounter], a
+    ld b, a
+    ld a, [wInverseVelocity]
+    ld c, a
+    ld a, 6
+    sub a, c
+    cp a, b
+    ret nz
+ApplyGravity:
+    xor a
+    ld [wGravityCounter], a
     ; Apply gravity
     ld a, [wInverseVelocity]
     inc a
@@ -174,15 +207,24 @@ HitsCeiling:
 ; @param c: Y (bottom right)
 ; @return z: set if grounded
 IsGrounded:
-    ; Check if it collides with a wall
+    ; Check bottom right
     call GetTileByPixel
     ld a, [hl]
     call IsWallTile
     ret z
 
-    ; Check for bottom left corner
+    ; Check bottom middle
     ld a, b
-    sub a, 8
+    sub a, 4
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+    ret z
+
+    ; Check bottom left
+    ld a, b
+    sub a, 4
     ld b, a
     call GetTileByPixel
     ld a, [hl]
@@ -200,27 +242,27 @@ CheckLeft:
     jp z, CheckRight
 Left:
     ; Set the horizontal flip flag (bit 5) in the sprite attributes
-    ld a, [_OAMRAM + 3]
+    ld a, [wShadowOAM + 3]
     or a, %00100000  ; Set horizontal flip bit (bit 5)
-    ld [_OAMRAM + 3], a
+    ld [wShadowOAM + 3], a
 
+    ; Check the player speed
+    ld a, [wSpeedCounter]
+    inc a
+    ld [wSpeedCounter], a
+    cp a, 2
+    jp nz, CheckUp
+    xor a
+    ld [wSpeedCounter], a
     ; Move the player one pixel to the left.
-    ld a, [_OAMRAM + 1]
+    ld a, [wShadowOAM + 1]
     dec a
     ; If we've already hit the edge of the playfield, don't move.
     cp a, 0 + 7
     jp z, CheckUp
-    ; Check for collision with wall
-    sub a, 8
-    ld b, a
-    ld a, [_OAMRAM]
-    sub a, 16
-    ld c, a
-    call CheckCollision
-    jp z, CheckUp
-    ld a, [_OAMRAM + 1]
+    ld a, [wShadowOAM + 1]
     dec a
-    ld [_OAMRAM + 1], a
+    ld [wShadowOAM + 1], a
     jp CheckUp
 
 ; Check the right button.
@@ -230,47 +272,128 @@ CheckRight:
     jp z, CheckUp
 Right:
     ; Clear the horizontal flip flag (bit 5) in the sprite attributes
-    ld a, [_OAMRAM + 3]
+    ld a, [wShadowOAM + 3]
     and a, %11011111  ; Clear horizontal flip bit (bit 5)
-    ld [_OAMRAM + 3], a
+    ld [wShadowOAM + 3], a
 
+    ; Check the player speed
+    ld a, [wSpeedCounter]
+    inc a
+    ld [wSpeedCounter], a
+    cp a, 2
+    jp nz, CheckUp
+    xor a
+    ld [wSpeedCounter], a
     ; Move the player one pixel to the right.
-    ld a, [_OAMRAM + 1]
+    ld a, [wShadowOAM + 1]
     inc a
     ; If we've already hit the edge of the playfield, don't move.
     cp a, 161
     jp z, CheckUp
-    ; Check for collision with wall
-    sub a, 8
-    ld b, a
-    ld a, [_OAMRAM]
-    sub a, 16
-    ld c, a
-    call CheckCollision
-    jp z, CheckUp
-    ld a, [_OAMRAM + 1]
+    ld a, [wShadowOAM + 1]
     inc a
-    ld [_OAMRAM + 1], a
+    ld [wShadowOAM + 1], a
     jp CheckUp
 
 ; Check the up button.
 CheckUp:
     ld a, [wCurKeys]
     and a, PADF_UP
-    ret z
+    jp z, CheckDown
 Up:
     ; Jump if on the ground
-    ld a, [_OAMRAM+1]
+    ld a, [wShadowOAM+1]
     ld b, a
-    ld a, [_OAMRAM]
+    ld a, [wShadowOAM]
     ld c, a
     call IsGrounded
     ret nz
     xor a
     ld [wPlayerDirection], a
     ld [wFrameCounter], a
+    ld [wGravityCounter], a
     ld a, 1
     ld [wInverseVelocity], a
+    ret
+
+; Check the down button.
+CheckDown:
+    ld a, [wCurKeys]
+    and a, PADF_DOWN
+    ret z
+Down:
+    ; Move down if on the ground
+    ld a, [wShadowOAM+1]
+    ld b, a
+    ld a, [wShadowOAM]
+    ld c, a
+    call IsGrounded
+    ret nz
+    ld a, [wShadowOAM]
+    add a, 2
+    ld [wShadowOAM], a
+    ret
+
+; When A is pressed, toggle between default sprite (tile 0) and attack sprite (tile 2)
+; After half a second, it will automatically switch back
+CheckA:
+    ; First check if the timer is already active
+    ld a, [wSpriteChangeTimer]   ; Check if timer is active
+    cp a, 0
+    jp nz, DecrementAttackTimer        ; If timer is not 0, just decrement it
+    
+    ; Timer is 0, check if A was pressed
+    ld a, [wCurKeys]             ; Load the current keys state
+    and a, PADF_A                ; Check if A button is pressed (S on keyboard)
+    ret z                        ; Return if A is not pressed
+    
+    ; A was pressed and timer is 0, switch to attack sprite
+    jp SetAttackSprite           ; Switch to attack sprite and start the timer
+
+DecrementAttackTimer:
+    ; Timer is active, decrement it regardless of button state
+    ld a, [wSpriteChangeTimer]
+    dec a                        ; Decrement timer
+    ld [wSpriteChangeTimer], a
+    
+    ; If timer reached 0, switch back to default sprite
+    cp a, 0
+    ret nz                       ; Return if timer is not yet 0
+    
+    ; Timer reached 0, switch back to default sprite
+    jp SetDefaultSprite
+    
+; Switch to attack tile (tile 2)
+SetAttackSprite:
+    ld a, 1
+    ld [wOriginalTile], a        ; Mark that we're using the attack tile
+    ld hl, wShadowOAM            ; Point to OAM data for the sprite
+    ld a, [hl]                   ; Preserve Y position
+    ld [hli], a
+    ld a, [hl]                   ; Preserve X position
+    ld [hli], a
+    ld a, 2                      ; Set tile ID to 2 (attack sprite)
+    ld [hli], a
+    ld a, [wShadowOAM + 3]       ; Preserve the original attributes (flip flags, etc.)
+    ld [hli], a
+    
+    ; Set timer for how long to display the attack sprite
+    ; 30 frames ≈ 0.5 seconds at 60fps
+    ld a, 60
+    ld [wSpriteChangeTimer], a
+    ret
+
+; Switch back to default tile (0)
+SetDefaultSprite:
+    xor a
+    ld [wOriginalTile], a        ; Mark that we're using the default tile
+    ld hl, wShadowOAM            ; Point to OAM data for the sprite
+    ld a, [hl]                   ; Preserve Y position
+    ld [hli], a
+    ld a, [hl]                   ; Preserve X position
+    ld [hli], a
+    xor a                        ; Set tile ID to 0 (default sprite)
+    ld [hli], a
     ret
 
 UpdateKeys:
@@ -309,58 +432,21 @@ UpdateKeys:
 .knownret
     ret 
 
-; Check if a player's bounding box collides with a wall
-; @param b: X (upper left)
-; @param c: Y (upper left)
-; @return z: set if collision
-CheckCollision:
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ld a, b
-    add a, 7
-    ld b, a
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ld a, c
-    add a, 8
-    ld c, a
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ld a, c
-    add a, 7
-    ld c, a
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ld a, b
-    sub a, 7
-    ld b, a
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ld a, c
-    sub a, 7
-    ld c, a
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ret
-
 ; Convert a pixel position to a tilemap address
 ; hl = $9800 + X + Y * 32
 ; @param b: X
 ; @param c: Y
 ; @return hl: tile address
 GetTileByPixel:
+    ld a, c
+    and a, %111
+    cp a, 0
+    jp z, ContinueCalc
+    cp a, 1
+    jp z, ContinueCalc
+    ld hl, 0
+    ret
+ContinueCalc:
     ; First, we need to divide by 8 to convert a pixel position to a tile position.
     ; After this we want to multiply the Y position by 32.
     ; These operations effectively cancel out so we only need to mask the Y value.
@@ -391,73 +477,61 @@ GetTileByPixel:
 ; @return z: set if a is a wall.
 IsWallTile:
     ; top platform
-    ; cp a, $30
-    ; ret z
-    ; cp a, $31
-    ; ret z
-    ; cp a, $32
-    ; ret z
+    cp a, $40
+    ret z
+    cp a, $41
+    ret z
+    cp a, $42
+    ret z
     ; left platform
-    ; cp a, $58
-    ; ret z
-    ; cp a, $59
-    ; ret z
-    ; cp a, $5A
-    ; ret z
+    cp a, $68
+    ret z
+    cp a, $69
+    ret z
+    cp a, $6A
+    ret z
     ; right platform
-    ; cp a, $5D
-    ; ret z
-    ; cp a, $5E
-    ; ret z
-    ; cp a, $5F
-    ; ret z
+    cp a, $6D
+    ret z
+    cp a, $6E
+    ret z
+    cp a, $6F
+    ret z
     ; base platform
-    ; cp a, $8E
-    ; ret z
-    ; cp a, $8F
-    ; ret z
-    ; cp a, $90
-    ; ret z
-    ; cp a, $91
-    ; ret z
-    ; cp a, $92
-    ; ret z
-    ; cp a, $93
-    ; ret z
-    ; cp a, $94
-    ; ret z
-    ; cp a, $95
-    ; ret z
-    ; cp a, $96
-    ; ret z
-    ; cp a, $97
-    ; ret z
-    ; cp a, $98
-    ; ret z
-    ; cp a, $99
-    ; ret z
-    cp a, $01
+    call IsBaseTile
     ret
 
-SECTION "Player Tiles", ROM0
-Player:
-    dw `00333300
-    dw `03000030
-    dw `03000030
-    dw `03000030
-    dw `03000030
-    dw `00333300
-    dw `00033000
-    dw `00033000
-    dw `00033000
-    dw `33333333
-    dw `00033000
-    dw `00033000
-    dw `00033000
-    dw `00333300
-    dw `03300330
-    dw `33000033
-PlayerEnd:
+; @param a: tile ID
+; @return z: set if a is a base.
+IsBaseTile:
+    cp a, $9E
+    ret z
+    cp a, $9F
+    ret z
+    cp a, $A0
+    ret z
+    cp a, $A1
+    ret z
+    cp a, $A2
+    ret z
+    cp a, $A3
+    ret z
+    cp a, $A4
+    ret z
+    cp a, $A5
+    ret z
+    cp a, $A6
+    ret z
+    cp a, $A7
+    ret z
+    cp a, $A8
+    ret z
+    cp a, $A9
+    ret
+
+UpdateSprite:
+    call CheckA
+    ret
 
 SECTION "Input Variables", WRAM0
 wCurKeys: db
@@ -467,3 +541,7 @@ SECTION "Player Data", WRAM0
 wInverseVelocity: db
 wFrameCounter: db
 wPlayerDirection: db
+wGravityCounter: db
+wSpeedCounter: db
+wSpriteChangeTimer: db  ; Timer for sprite change
+wOriginalTile: db       ; Store the original tile ID
