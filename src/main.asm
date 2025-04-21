@@ -315,31 +315,60 @@ Up:
     ld [wInverseVelocity], a
     ret
 
-; Check the A button.
-; When A is pressed, toggle between default sprite (tile 0) and alternate sprite (tile 2)
+; When A is pressed, toggle between default sprite (tile 0) and attack sprite (tile 2)
+; After half a second, it will automatically switch back
 CheckA:
-    ld a, [wCurKeys]     ; Load the current keys state
-    and a, PADF_A        ; Check if A button is pressed
-    ret z                ; Return if A is not pressed
-AButtonPressed:
-    ; Handle sprite switching with timer
+    ; First check if the timer is already active
     ld a, [wSpriteChangeTimer]   ; Check if timer is active
     cp a, 0
-    jp z, SwitchSprite           ; If timer is 0, switch the sprite
-    dec a                        ; Otherwise, decrement timer
+    jp nz, DecrementAttackTimer        ; If timer is not 0, just decrement it
+    
+    ; Timer is 0, check if A was pressed
+    ld a, [wCurKeys]             ; Load the current keys state
+    and a, PADF_A                ; Check if A button is pressed (S on keyboard)
+    ret z                        ; Return if A is not pressed
+    
+    ; A was pressed and timer is 0, switch to attack sprite
+    jp SetAttackSprite           ; Switch to attack sprite and start the timer
+
+DecrementAttackTimer:
+    ; Timer is active, decrement it regardless of button state
+    ld a, [wSpriteChangeTimer]
+    dec a                        ; Decrement timer
+    ld [wSpriteChangeTimer], a
+    
+    ; If timer reached 0, switch back to default sprite
+    cp a, 0
+    ret nz                       ; Return if timer is not yet 0
+    
+    ; Timer reached 0, switch back to default sprite
+    jp SetDefaultSprite
+    
+; Switch to attack tile (tile 2)
+SetAttackSprite:
+    ld a, 1
+    ld [wOriginalTile], a        ; Mark that we're using the attack tile
+    ld hl, wShadowOAM            ; Point to OAM data for the sprite
+    ld a, [hl]                   ; Preserve Y position
+    ld [hli], a
+    ld a, [hl]                   ; Preserve X position
+    ld [hli], a
+    ld a, 2                      ; Set tile ID to 2 (attack sprite)
+    ld [hli], a
+    ld a, [wShadowOAM + 3]       ; Preserve the original attributes (flip flags, etc.)
+    ld [hli], a
+    
+    ; Set timer for how long to display the attack sprite
+    ; 30 frames ≈ 0.5 seconds at 60fps
+    ld a, 30
     ld [wSpriteChangeTimer], a
     ret
 
-; Switch between sprite tiles based on current state
-SwitchSprite:
-    ld a, [wOriginalTile]        ; Check which tile is currently shown
-    cp a, 0                      ; Is it the default tile (0)?
-    jp z, SetOriginalTile        ; If yes, switch to alternate tile (2)
-    
-    ; Switch back to default tile (0)
-    ld a, 0
+; Switch back to default tile (0)
+SetDefaultSprite:
+    xor a
     ld [wOriginalTile], a        ; Mark that we're using the default tile
-    ld hl, _OAMRAM               ; Point to OAM data for the sprite
+    ld hl, wShadowOAM            ; Point to OAM data for the sprite
     ld a, [hl]                   ; Preserve Y position
     ld [hli], a
     ld a, [hl]                   ; Preserve X position
@@ -347,29 +376,6 @@ SwitchSprite:
     xor a                        ; Set tile ID to 0 (default sprite)
     ld [hli], a
     ld [hli], a                  ; Set attributes
-    jp SetTimer
-
-; Switch to alternate tile (tile 2)
-SetOriginalTile:
-    ld a, 1
-    ld [wOriginalTile], a        ; Mark that we're using the alternate tile
-    ld hl, _OAMRAM               ; Point to OAM data for the sprite
-    ld a, [hl]                   ; Preserve Y position
-    ld [hli], a
-    ld a, [hl]                   ; Preserve X position
-    ld [hli], a
-    ld a, 2                      ; Set tile ID to 2 (alternate sprite)
-    ld [hli], a
-    ld a, [_OAMRAM + 3]          ; Preserve the original attributes (flip flags, etc.)
-    ld [hli], a
-
-; Set the timer for how long to display the current sprite
-; Timer decrements each frame (~60fps), so 30 = ~0.5 seconds
-SetTimer:
-    ld a, 20                     ; Set timer (adjust this value for desired duration)
-                                 ; 10 frames ≈ 1/6 second at 60fps
-                                 ; For 0.5 seconds, use value 30
-    ld [wSpriteChangeTimer], a
     ret
 
 UpdateKeys:
