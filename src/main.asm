@@ -496,50 +496,50 @@ GetTileByPixel:
 ; @return z: set if a is a wall.
 IsWallTile:
     ; top platform
-    cp a, $30
+    cp a, $40
     ret z
-    cp a, $31
+    cp a, $41
     ret z
-    cp a, $32
+    cp a, $42
     ret z
     ; left platform
-    cp a, $58
+    cp a, $68
     ret z
-    cp a, $59
+    cp a, $69
     ret z
-    cp a, $5A
+    cp a, $6A
     ret z
     ; right platform
-    cp a, $5D
+    cp a, $6D
     ret z
-    cp a, $5E
+    cp a, $6E
     ret z
-    cp a, $5F
+    cp a, $6F
     ret z
     ; base platform
-    cp a, $8E
+    cp a, $9E
     ret z
-    cp a, $8F
+    cp a, $9F
     ret z
-    cp a, $90
+    cp a, $A0
     ret z
-    cp a, $91
+    cp a, $A1
     ret z
-    cp a, $92
+    cp a, $A2
     ret z
-    cp a, $93
+    cp a, $A3
     ret z
-    cp a, $94
+    cp a, $A4
     ret z
-    cp a, $95
+    cp a, $A5
     ret z
-    cp a, $96
+    cp a, $A6
     ret z
-    cp a, $97
+    cp a, $A7
     ret z
-    cp a, $98
+    cp a, $A8
     ret z
-    cp a, $99
+    cp a, $A9
     ret z
     ; cp a, $01
     ret
