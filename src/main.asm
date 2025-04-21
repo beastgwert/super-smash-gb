@@ -69,6 +69,7 @@ WaitVBlank:
     ld [wGravityCounter], a
     ld [wSpriteChangeTimer], a
     ld [wOriginalTile], a
+    ld [wSpeedCounter], a
 
 Main:
     call ResetShadowOAM
@@ -169,15 +170,6 @@ HitsGround:
     ld [wGravityCounter], a
     ret
 MovesUp:
-    ld a, [wShadowOAM+1]
-    sub a, 8
-    ld b, a
-    ld a, [wShadowOAM]
-    sub a, 16 + 1
-    ld c, a
-    ; Check if player hits ceiling
-    call CheckCollision
-    jp z, HitsCeiling
     ; Move up
     ld a, [wShadowOAM]
     sub a, 2
@@ -254,19 +246,19 @@ Left:
     or a, %00100000  ; Set horizontal flip bit (bit 5)
     ld [wShadowOAM + 3], a
 
+    ; Check the player speed
+    ld a, [wSpeedCounter]
+    inc a
+    ld [wSpeedCounter], a
+    cp a, 2
+    jp nz, CheckUp
+    xor a
+    ld [wSpeedCounter], a
     ; Move the player one pixel to the left.
     ld a, [wShadowOAM + 1]
     dec a
     ; If we've already hit the edge of the playfield, don't move.
     cp a, 0 + 7
-    jp z, CheckUp
-    ; Check for collision with wall
-    sub a, 8
-    ld b, a
-    ld a, [wShadowOAM]
-    sub a, 16
-    ld c, a
-    call CheckCollision
     jp z, CheckUp
     ld a, [wShadowOAM + 1]
     dec a
@@ -284,19 +276,19 @@ Right:
     and a, %11011111  ; Clear horizontal flip bit (bit 5)
     ld [wShadowOAM + 3], a
 
+    ; Check the player speed
+    ld a, [wSpeedCounter]
+    inc a
+    ld [wSpeedCounter], a
+    cp a, 2
+    jp nz, CheckUp
+    xor a
+    ld [wSpeedCounter], a
     ; Move the player one pixel to the right.
     ld a, [wShadowOAM + 1]
     inc a
     ; If we've already hit the edge of the playfield, don't move.
     cp a, 161
-    jp z, CheckUp
-    ; Check for collision with wall
-    sub a, 8
-    ld b, a
-    ld a, [wShadowOAM]
-    sub a, 16
-    ld c, a
-    call CheckCollision
     jp z, CheckUp
     ld a, [wShadowOAM + 1]
     inc a
@@ -422,53 +414,6 @@ UpdateKeys:
 .knownret
     ret 
 
-; Check if a player's bounding box collides with a wall
-; @param b: X (upper left)
-; @param c: Y (upper left)
-; @return z: set if collision
-CheckCollision:
-    ret
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ld a, b
-    add a, 7
-    ld b, a
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ld a, c
-    add a, 8
-    ld c, a
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ld a, c
-    add a, 7
-    ld c, a
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ld a, b
-    sub a, 7
-    ld b, a
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ld a, c
-    sub a, 7
-    ld c, a
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-    ret
-
 ; Convert a pixel position to a tilemap address
 ; hl = $9800 + X + Y * 32
 ; @param b: X
@@ -557,26 +502,6 @@ UpdateSprite:
     call CheckA
     ret
 
-SECTION "Player Tiles", ROM0
-Player:
-    dw `00333300
-    dw `03000030
-    dw `03000030
-    dw `03000030
-    dw `03000030
-    dw `00333300
-    dw `00033000
-    dw `00033000
-    dw `00033000
-    dw `33333333
-    dw `00033000
-    dw `00033000
-    dw `00033000
-    dw `00333300
-    dw `03300330
-    dw `33000033
-PlayerEnd:
-
 SECTION "Input Variables", WRAM0
 wCurKeys: db
 wNewKeys: db
@@ -586,5 +511,6 @@ wInverseVelocity: db
 wFrameCounter: db
 wPlayerDirection: db
 wGravityCounter: db
+wSpeedCounter: db
 wSpriteChangeTimer: db  ; Timer for sprite change
 wOriginalTile: db       ; Store the original tile ID
