@@ -215,15 +215,24 @@ HitsCeiling:
 ; @param c: Y (bottom right)
 ; @return z: set if grounded
 IsGrounded:
-    ; Check if it collides with a wall
+    ; Check bottom right
     call GetTileByPixel
     ld a, [hl]
     call IsWallTile
     ret z
 
-    ; Check for bottom left corner
+    ; Check bottom middle
     ld a, b
-    sub a, 8
+    sub a, 4
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+    ret z
+
+    ; Check bottom left
+    ld a, b
+    sub a, 4
     ld b, a
     call GetTileByPixel
     ld a, [hl]
