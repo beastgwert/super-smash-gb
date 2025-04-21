@@ -361,7 +361,7 @@ SetAttackSprite:
     
     ; Set timer for how long to display the attack sprite
     ; 30 frames ≈ 0.5 seconds at 60fps
-    ld a, 30
+    ld a, 60
     ld [wSpriteChangeTimer], a
     ret
 
