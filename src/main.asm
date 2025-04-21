@@ -2,6 +2,7 @@ INCLUDE "hardware.inc"
 INCLUDE "arena-background.asm"
 INCLUDE "characters.asm"
 INCLUDE "utils/sprobjs_lib.asm"
+INCLUDE "utils/sgb-utils.asm"
 
 SECTION "Header", ROM0[$100]
 
@@ -63,19 +64,27 @@ WaitVBlank:
     ; Initialize global variables
     xor a
     ld [wFrameCounter], a
-    ld [wCurKeys], a
-    ld [wNewKeys], a
+    ld [wCurKeys1], a
+    ld [wCurKeys2], a
     ld [wInverseVelocity], a
     ld [wGravityCounter], a
     ld [wSpriteChangeTimer], a
     ld [wOriginalTile], a
     ld [wSpeedCounter], a
 
+    ; Enable second joypad input
+    call check_sgb
+
 Main:
     call ResetShadowOAM
 
     ; Check the current keys every frame and move left or right.
     call UpdateKeys
+    ld a, [wCurKeys]
+    ld [wCurKeys1], a
+    call UpdateKeys
+    ld a, [wCurKeys]
+    ld [wCurKeys2], a
 
     call UpdatePlayer
 
@@ -536,6 +545,8 @@ UpdateSprite:
 SECTION "Input Variables", WRAM0
 wCurKeys: db
 wNewKeys: db
+wCurKeys1: db
+wCurKeys2: db
 
 SECTION "Player Data", WRAM0
 wInverseVelocity: db
