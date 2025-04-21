@@ -375,7 +375,6 @@ SetDefaultSprite:
     ld [hli], a
     xor a                        ; Set tile ID to 0 (default sprite)
     ld [hli], a
-    ld [hli], a                  ; Set attributes
     ret
 
 UpdateKeys:
