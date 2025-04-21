@@ -1,6 +1,7 @@
 INCLUDE "hardware.inc"
 INCLUDE "arena-background.asm"
 INCLUDE "characters.asm"
+INCLUDE "utils/sprobjs_lib.asm"
 
 SECTION "Header", ROM0[$100]
 
@@ -26,22 +27,39 @@ WaitVBlank:
     call InitializeBackground
 
     call InitializeCharacters
+
+    ; Copy the tile data
+    ; ld de, Tiles
+    ; ld hl, $9000
+    ; ld bc, TilesEnd - Tiles
+    ; call Memcopy
+
+    ; Copy the tilemap
+    ; ld de, Tilemap
+    ; ld hl, $9800
+    ; ld bc, TilemapEnd - Tilemap
+    ; call Memcopy
+
     ; Copy the player
     ; ld de, Player
     ; ld hl, $8000
     ; ld bc, PlayerEnd - Player
     ; call Memcopy
 
-    ld a, 0
+    ; Initilize Sprite Object Library.
+    call InitSprObjLib
+
+    ; Reset hardware OAM
+    xor a, a
     ld b, 160
-    ld hl, _OAMRAM
-ClearOam:
+    ld hl, wShadowOAM
+.resetOAM
     ld [hli], a
     dec b
-    jp nz, ClearOam
+    jr nz, .resetOAM
 
     ; Initialize the player in OAM
-    ld hl, _OAMRAM
+    ld hl, wShadowOAM
     ld a, 16 + 16
     ld [hli], a
     ld a, 80 + 8
@@ -68,13 +86,7 @@ ClearOam:
     ld [wInverseVelocity], a
 
 Main:
-    ldh a, [rLY]
-	cp 144
-	jp nc, Main
-WaitVBlank2:
-	ldh a, [rLY]
-	cp 144
-	jp c, WaitVBlank2
+    call ResetShadowOAM
 
     ; Check the current keys every frame and move left or right.
     call UpdateKeys
@@ -83,13 +95,24 @@ WaitVBlank2:
 
     call CheckMovement
 
+    ldh a, [rLY]
+	cp 144
+	jp nc, Main
+WaitVBlank2:
+	ldh a, [rLY]
+	cp 144
+	jp c, WaitVBlank2
+
+    ld a, HIGH(wShadowOAM)
+    call hOAMDMA
+
     jp Main
 
 ; Update the player's position based on their velocity
 UpdatePlayer:
-    ld a, [_OAMRAM+1]
+    ld a, [wShadowOAM+1]
     ld b, a
-    ld a, [_OAMRAM]
+    ld a, [wShadowOAM]
     ld c, a
     call IsGrounded
     jp nz, InAir
@@ -127,11 +150,11 @@ UpdatePosition:
     dec a
     ld [wInverseVelocity], a
 MaximumVelocity:
-    ld a, [_OAMRAM]
+    ld a, [wShadowOAM]
     add a, 2
     ld c, a
-    ld [_OAMRAM], a
-    ld a, [_OAMRAM+1]
+    ld [wShadowOAM], a
+    ld a, [wShadowOAM+1]
     ld b, a
     ; Check if player hits ground
     call IsGrounded
@@ -143,18 +166,18 @@ HitsGround:
     ld [wFrameCounter], a
     ret
 MovesUp:
-    ld a, [_OAMRAM+1]
+    ld a, [wShadowOAM+1]
     sub a, 8
     ld b, a
-    ld a, [_OAMRAM]
+    ld a, [wShadowOAM]
     sub a, 16 + 1
     ld c, a
     ; Check if player hits ceiling
     call CheckCollision
     jp z, HitsCeiling
-    ld a, [_OAMRAM]
+    ld a, [wShadowOAM]
     sub a, 2
-    ld [_OAMRAM], a
+    ld [wShadowOAM], a
     ; Update velocity
     ld a, [wInverseVelocity]
     cp a, 10
@@ -200,12 +223,12 @@ CheckLeft:
     jp z, CheckRight
 Left:
     ; Set the horizontal flip flag (bit 5) in the sprite attributes
-    ld a, [_OAMRAM + 3]
+    ld a, [wShadowOAM + 3]
     or a, %00100000  ; Set horizontal flip bit (bit 5)
-    ld [_OAMRAM + 3], a
+    ld [wShadowOAM + 3], a
 
     ; Move the player one pixel to the left.
-    ld a, [_OAMRAM + 1]
+    ld a, [wShadowOAM + 1]
     dec a
     ; If we've already hit the edge of the playfield, don't move.
     cp a, 0 + 7
@@ -213,14 +236,14 @@ Left:
     ; Check for collision with wall
     sub a, 8
     ld b, a
-    ld a, [_OAMRAM]
+    ld a, [wShadowOAM]
     sub a, 16
     ld c, a
     call CheckCollision
     jp z, CheckUp
-    ld a, [_OAMRAM + 1]
+    ld a, [wShadowOAM + 1]
     dec a
-    ld [_OAMRAM + 1], a
+    ld [wShadowOAM + 1], a
     jp CheckUp
 
 ; Check the right button.
@@ -230,12 +253,12 @@ CheckRight:
     jp z, CheckUp
 Right:
     ; Clear the horizontal flip flag (bit 5) in the sprite attributes
-    ld a, [_OAMRAM + 3]
+    ld a, [wShadowOAM + 3]
     and a, %11011111  ; Clear horizontal flip bit (bit 5)
-    ld [_OAMRAM + 3], a
+    ld [wShadowOAM + 3], a
 
     ; Move the player one pixel to the right.
-    ld a, [_OAMRAM + 1]
+    ld a, [wShadowOAM + 1]
     inc a
     ; If we've already hit the edge of the playfield, don't move.
     cp a, 161
@@ -243,14 +266,14 @@ Right:
     ; Check for collision with wall
     sub a, 8
     ld b, a
-    ld a, [_OAMRAM]
+    ld a, [wShadowOAM]
     sub a, 16
     ld c, a
     call CheckCollision
     jp z, CheckUp
-    ld a, [_OAMRAM + 1]
+    ld a, [wShadowOAM + 1]
     inc a
-    ld [_OAMRAM + 1], a
+    ld [wShadowOAM + 1], a
     jp CheckUp
 
 ; Check the up button.
@@ -260,9 +283,9 @@ CheckUp:
     ret z
 Up:
     ; Jump if on the ground
-    ld a, [_OAMRAM+1]
+    ld a, [wShadowOAM+1]
     ld b, a
-    ld a, [_OAMRAM]
+    ld a, [wShadowOAM]
     ld c, a
     call IsGrounded
     ret nz
@@ -391,52 +414,52 @@ GetTileByPixel:
 ; @return z: set if a is a wall.
 IsWallTile:
     ; top platform
-    ; cp a, $30
-    ; ret z
-    ; cp a, $31
-    ; ret z
-    ; cp a, $32
-    ; ret z
+    cp a, $30
+    ret z
+    cp a, $31
+    ret z
+    cp a, $32
+    ret z
     ; left platform
-    ; cp a, $58
-    ; ret z
-    ; cp a, $59
-    ; ret z
-    ; cp a, $5A
-    ; ret z
+    cp a, $58
+    ret z
+    cp a, $59
+    ret z
+    cp a, $5A
+    ret z
     ; right platform
-    ; cp a, $5D
-    ; ret z
-    ; cp a, $5E
-    ; ret z
-    ; cp a, $5F
-    ; ret z
+    cp a, $5D
+    ret z
+    cp a, $5E
+    ret z
+    cp a, $5F
+    ret z
     ; base platform
-    ; cp a, $8E
-    ; ret z
-    ; cp a, $8F
-    ; ret z
-    ; cp a, $90
-    ; ret z
-    ; cp a, $91
-    ; ret z
-    ; cp a, $92
-    ; ret z
-    ; cp a, $93
-    ; ret z
-    ; cp a, $94
-    ; ret z
-    ; cp a, $95
-    ; ret z
-    ; cp a, $96
-    ; ret z
-    ; cp a, $97
-    ; ret z
-    ; cp a, $98
-    ; ret z
-    ; cp a, $99
-    ; ret z
-    cp a, $01
+    cp a, $8E
+    ret z
+    cp a, $8F
+    ret z
+    cp a, $90
+    ret z
+    cp a, $91
+    ret z
+    cp a, $92
+    ret z
+    cp a, $93
+    ret z
+    cp a, $94
+    ret z
+    cp a, $95
+    ret z
+    cp a, $96
+    ret z
+    cp a, $97
+    ret z
+    cp a, $98
+    ret z
+    cp a, $99
+    ret z
+    ; cp a, $01
     ret
 
 SECTION "Player Tiles", ROM0
@@ -467,3 +490,33 @@ SECTION "Player Data", WRAM0
 wInverseVelocity: db
 wFrameCounter: db
 wPlayerDirection: db
+
+SECTION "Tile data", ROM0
+
+Tiles:
+    db $00,$00, $00,$00, $00,$00, $00,$00, $00,$00, $00,$00, $00,$00, $00,$00
+	db $ff,$ff, $ff,$ff, $ff,$ff, $ff,$ff, $ff,$ff, $ff,$ff, $ff,$ff, $ff,$ff
+TilesEnd:
+
+SECTION "Tilemap", ROM0
+
+Tilemap:
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $01, $01, $01, $01, $01, $00, $00, $00, $00, $00, $00, $01, $01, $01, $01, $01, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
+	db $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01,  0,0,0,0,0,0,0,0,0,0,0,0
+TilemapEnd:
