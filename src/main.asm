@@ -1,5 +1,6 @@
 INCLUDE "hardware.inc"
 INCLUDE "arena-background.asm"
+INCLUDE "characters.asm"
 
 SECTION "Header", ROM0[$100]
 
@@ -24,11 +25,12 @@ WaitVBlank:
 
     call InitializeBackground
 
+    call InitializeCharacters
     ; Copy the player
-    ld de, Player
-    ld hl, $8000
-    ld bc, PlayerEnd - Player
-    call Memcopy
+    ; ld de, Player
+    ; ld hl, $8000
+    ; ld bc, PlayerEnd - Player
+    ; call Memcopy
 
     ld a, 0
     ld b, 160
