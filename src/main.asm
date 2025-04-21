@@ -85,7 +85,7 @@ Main:
 
     ldh a, [rLY]
 	cp 144
-	jp nc, Main
+	jp nc, Main // rerun if in vblank
 WaitVBlank2:
 	ldh a, [rLY]
 	cp 144
