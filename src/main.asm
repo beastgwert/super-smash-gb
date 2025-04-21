@@ -28,24 +28,6 @@ WaitVBlank:
 
     call InitializeCharacters
 
-    ; Copy the tile data
-    ; ld de, Tiles
-    ; ld hl, $9000
-    ; ld bc, TilesEnd - Tiles
-    ; call Memcopy
-
-    ; Copy the tilemap
-    ; ld de, Tilemap
-    ; ld hl, $9800
-    ; ld bc, TilemapEnd - Tilemap
-    ; call Memcopy
-
-    ; Copy the player
-    ; ld de, Player
-    ; ld hl, $8000
-    ; ld bc, PlayerEnd - Player
-    ; call Memcopy
-
     ; Initilize Sprite Object Library.
     call InitSprObjLib
 
@@ -84,6 +66,7 @@ WaitVBlank:
     ld [wCurKeys], a
     ld [wNewKeys], a
     ld [wInverseVelocity], a
+    ld [wGravityCounter], a
 
 Main:
     call ResetShadowOAM
@@ -124,7 +107,7 @@ InAir:
     ld a, [wInverseVelocity]
     cp a, 0
     jp nz, NonZeroVelocity
-    ld a, 10
+    ld a, 4
     ld [wInverseVelocity], a
     ld a, 1
     ld [wPlayerDirection], a
@@ -146,12 +129,27 @@ UpdatePosition:
     ld a, [wInverseVelocity]
     cp a, 1
     jp z, MaximumVelocity
+    ; Check if gravity counter is correct
+    ld a, [wGravityCounter]
+    inc a
+    ld [wGravityCounter], a
+    ld b, a
+    ld a, [wInverseVelocity]
+    ld c, a
+    ld a, 6
+    sub a, c
+    cp a, b
+    jp nz, MaximumVelocity
+    xor a
+    ld [wGravityCounter], a
     ; Apply gravity
+    ld a, [wInverseVelocity]
     dec a
     ld [wInverseVelocity], a
 MaximumVelocity:
+    ; Move down
     ld a, [wShadowOAM]
-    add a, 2
+    inc a
     ld c, a
     ld [wShadowOAM], a
     ld a, [wShadowOAM+1]
@@ -164,6 +162,7 @@ HitsGround:
     xor a
     ld [wInverseVelocity], a
     ld [wFrameCounter], a
+    ld [wGravityCounter], a
     ret
 MovesUp:
     ld a, [wShadowOAM+1]
@@ -175,13 +174,28 @@ MovesUp:
     ; Check if player hits ceiling
     call CheckCollision
     jp z, HitsCeiling
+    ; Move up
     ld a, [wShadowOAM]
-    sub a, 2
+    dec a
     ld [wShadowOAM], a
     ; Update velocity
     ld a, [wInverseVelocity]
-    cp a, 10
+    cp a, 4
     jp z, HitsCeiling
+    ; Check if gravity counter is correct
+    ld a, [wGravityCounter]
+    inc a
+    ld [wGravityCounter], a
+    ld b, a
+    ld a, [wInverseVelocity]
+    ld c, a
+    ld a, 6
+    sub a, c
+    cp a, b
+    ret nz
+ApplyGravity:
+    xor a
+    ld [wGravityCounter], a
     ; Apply gravity
     ld a, [wInverseVelocity]
     inc a
@@ -292,6 +306,7 @@ Up:
     xor a
     ld [wPlayerDirection], a
     ld [wFrameCounter], a
+    ld [wGravityCounter], a
     ld a, 1
     ld [wInverseVelocity], a
     ret
@@ -462,26 +477,6 @@ IsWallTile:
     ; cp a, $01
     ret
 
-SECTION "Player Tiles", ROM0
-Player:
-    dw `00333300
-    dw `03000030
-    dw `03000030
-    dw `03000030
-    dw `03000030
-    dw `00333300
-    dw `00033000
-    dw `00033000
-    dw `00033000
-    dw `33333333
-    dw `00033000
-    dw `00033000
-    dw `00033000
-    dw `00333300
-    dw `03300330
-    dw `33000033
-PlayerEnd:
-
 SECTION "Input Variables", WRAM0
 wCurKeys: db
 wNewKeys: db
@@ -490,33 +485,4 @@ SECTION "Player Data", WRAM0
 wInverseVelocity: db
 wFrameCounter: db
 wPlayerDirection: db
-
-SECTION "Tile data", ROM0
-
-Tiles:
-    db $00,$00, $00,$00, $00,$00, $00,$00, $00,$00, $00,$00, $00,$00, $00,$00
-	db $ff,$ff, $ff,$ff, $ff,$ff, $ff,$ff, $ff,$ff, $ff,$ff, $ff,$ff, $ff,$ff
-TilesEnd:
-
-SECTION "Tilemap", ROM0
-
-Tilemap:
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $01, $01, $01, $01, $01, $00, $00, $00, $00, $00, $00, $01, $01, $01, $01, $01, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,  0,0,0,0,0,0,0,0,0,0,0,0
-	db $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01,  0,0,0,0,0,0,0,0,0,0,0,0
-TilemapEnd:
+wGravityCounter: db
