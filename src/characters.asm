@@ -16,6 +16,24 @@ omkarTileDataEnd:
 omkarAttackTileData: INCBIN "generated/omkar-attack.2bpp"
 omkarAttackTileDataEnd:
 
+christopherTileData: INCBIN "generated/christopher.2bpp"
+christopherTileDataEnd:
+
+christopherAttackTileData: INCBIN "generated/christopher-attack.2bpp"
+christopherAttackTileDataEnd:
+
+neilTileData: INCBIN "generated/neil.2bpp"
+neilTileDataEnd:
+
+neilAttackTileData: INCBIN "generated/neil-attack.2bpp"
+neilAttackTileDataEnd:
+
+calebTileData: INCBIN "generated/caleb.2bpp"
+calebTileDataEnd:
+
+calebAttackTileData: INCBIN "generated/caleb-attack.2bpp"
+calebAttackTileDataEnd:
+
 InitializeCharacters::
     
     ; Load michael regular sprite data
@@ -24,22 +42,49 @@ InitializeCharacters::
     ld bc, michaelTileDataEnd - michaelTileData
     call Memcopy
     
-    ; Calculate the next position after michael sprites
     ld de, michaelAttackTileData
     ld hl, CHARACTER_TILES_START + 16 * 2 ; each tile is 16 bytes, and each character is two tiles
     ld bc, michaelAttackTileDataEnd - michaelAttackTileData
     call Memcopy
     
-    ; Load omkar regular sprite data
     ld de, omkarTileData
     ld hl, CHARACTER_TILES_START + 16 * 4
     ld bc, omkarTileDataEnd - omkarTileData
     call Memcopy
     
-    ; Calculate the next position after omkar sprites
     ld de, omkarAttackTileData
     ld hl, CHARACTER_TILES_START + 16 * 6
     ld bc, omkarAttackTileDataEnd - omkarAttackTileData
+    call Memcopy
+    
+    ld de, christopherTileData
+    ld hl, CHARACTER_TILES_START + 16 * 8
+    ld bc, christopherTileDataEnd - christopherTileData
+    call Memcopy
+    
+    ld de, christopherAttackTileData
+    ld hl, CHARACTER_TILES_START + 16 * 10
+    ld bc, christopherAttackTileDataEnd - christopherAttackTileData
+    call Memcopy
+
+    ld de, neilTileData
+    ld hl, CHARACTER_TILES_START + 16 * 12
+    ld bc, neilTileDataEnd - neilTileData
+    call Memcopy
+    
+    ld de, neilAttackTileData
+    ld hl, CHARACTER_TILES_START + 16 * 14
+    ld bc, neilAttackTileDataEnd - neilAttackTileData
+    call Memcopy
+    
+    ld de, calebTileData
+    ld hl, CHARACTER_TILES_START + 16 * 16
+    ld bc, calebTileDataEnd - calebTileData
+    call Memcopy
+    
+    ld de, calebAttackTileData
+    ld hl, CHARACTER_TILES_START + 16 * 18
+    ld bc, calebAttackTileDataEnd - calebAttackTileData
     call Memcopy
     
     ret
