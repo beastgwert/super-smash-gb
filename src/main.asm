@@ -199,6 +199,11 @@ CheckLeft:
     and a, PADF_LEFT
     jp z, CheckRight
 Left:
+    ; Set the horizontal flip flag (bit 5) in the sprite attributes
+    ld a, [_OAMRAM + 3]
+    or a, %00100000  ; Set horizontal flip bit (bit 5)
+    ld [_OAMRAM + 3], a
+
     ; Move the player one pixel to the left.
     ld a, [_OAMRAM + 1]
     dec a
@@ -224,6 +229,11 @@ CheckRight:
     and a, PADF_RIGHT
     jp z, CheckUp
 Right:
+    ; Clear the horizontal flip flag (bit 5) in the sprite attributes
+    ld a, [_OAMRAM + 3]
+    and a, %11011111  ; Clear horizontal flip bit (bit 5)
+    ld [_OAMRAM + 3], a
+
     ; Move the player one pixel to the right.
     ld a, [_OAMRAM + 1]
     inc a
