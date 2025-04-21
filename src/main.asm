@@ -80,6 +80,8 @@ Main:
 
     call CheckMovement
 
+    call UpdateSprite
+
     ldh a, [rLY]
 	cp 144
 	jp nc, Main
@@ -90,8 +92,6 @@ WaitVBlank2:
 
     ld a, HIGH(wShadowOAM)
     call hOAMDMA
-
-    call UpdateSprite
 
     jp Main
 
