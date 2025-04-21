@@ -149,7 +149,7 @@ UpdatePosition:
 MaximumVelocity:
     ; Move down
     ld a, [wShadowOAM]
-    inc a
+    add a, 2
     ld c, a
     ld [wShadowOAM], a
     ld a, [wShadowOAM+1]
@@ -176,7 +176,7 @@ MovesUp:
     jp z, HitsCeiling
     ; Move up
     ld a, [wShadowOAM]
-    dec a
+    sub a, 2
     ld [wShadowOAM], a
     ; Update velocity
     ld a, [wInverseVelocity]
@@ -352,6 +352,7 @@ UpdateKeys:
 ; @param c: Y (upper left)
 ; @return z: set if collision
 CheckCollision:
+    ret
     call GetTileByPixel
     ld a, [hl]
     call IsWallTile
