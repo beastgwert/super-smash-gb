@@ -67,6 +67,8 @@ WaitVBlank:
     ld [wNewKeys], a
     ld [wInverseVelocity], a
     ld [wGravityCounter], a
+    ld [wSpriteChangeTimer], a
+    ld [wOriginalTile], a
 
 Main:
     call ResetShadowOAM
@@ -88,6 +90,8 @@ WaitVBlank2:
 
     ld a, HIGH(wShadowOAM)
     call hOAMDMA
+
+    call UpdateSprite
 
     jp Main
 
@@ -311,6 +315,63 @@ Up:
     ld [wInverseVelocity], a
     ret
 
+; Check the A button.
+; When A is pressed, toggle between default sprite (tile 0) and alternate sprite (tile 2)
+CheckA:
+    ld a, [wCurKeys]     ; Load the current keys state
+    and a, PADF_A        ; Check if A button is pressed
+    ret z                ; Return if A is not pressed
+AButtonPressed:
+    ; Handle sprite switching with timer
+    ld a, [wSpriteChangeTimer]   ; Check if timer is active
+    cp a, 0
+    jp z, SwitchSprite           ; If timer is 0, switch the sprite
+    dec a                        ; Otherwise, decrement timer
+    ld [wSpriteChangeTimer], a
+    ret
+
+; Switch between sprite tiles based on current state
+SwitchSprite:
+    ld a, [wOriginalTile]        ; Check which tile is currently shown
+    cp a, 0                      ; Is it the default tile (0)?
+    jp z, SetOriginalTile        ; If yes, switch to alternate tile (2)
+    
+    ; Switch back to default tile (0)
+    ld a, 0
+    ld [wOriginalTile], a        ; Mark that we're using the default tile
+    ld hl, _OAMRAM               ; Point to OAM data for the sprite
+    ld a, [hl]                   ; Preserve Y position
+    ld [hli], a
+    ld a, [hl]                   ; Preserve X position
+    ld [hli], a
+    xor a                        ; Set tile ID to 0 (default sprite)
+    ld [hli], a
+    ld [hli], a                  ; Set attributes
+    jp SetTimer
+
+; Switch to alternate tile (tile 2)
+SetOriginalTile:
+    ld a, 1
+    ld [wOriginalTile], a        ; Mark that we're using the alternate tile
+    ld hl, _OAMRAM               ; Point to OAM data for the sprite
+    ld a, [hl]                   ; Preserve Y position
+    ld [hli], a
+    ld a, [hl]                   ; Preserve X position
+    ld [hli], a
+    ld a, 2                      ; Set tile ID to 2 (alternate sprite)
+    ld [hli], a
+    ld a, [_OAMRAM + 3]          ; Preserve the original attributes (flip flags, etc.)
+    ld [hli], a
+
+; Set the timer for how long to display the current sprite
+; Timer decrements each frame (~60fps), so 30 = ~0.5 seconds
+SetTimer:
+    ld a, 20                     ; Set timer (adjust this value for desired duration)
+                                 ; 10 frames ≈ 1/6 second at 60fps
+                                 ; For 0.5 seconds, use value 30
+    ld [wSpriteChangeTimer], a
+    ret
+
 UpdateKeys:
     ; Poll half the controller
     ld a, P1F_GET_BTN
@@ -478,6 +539,30 @@ IsWallTile:
     ; cp a, $01
     ret
 
+UpdateSprite:
+    call CheckA
+    ret
+
+SECTION "Player Tiles", ROM0
+Player:
+    dw `00333300
+    dw `03000030
+    dw `03000030
+    dw `03000030
+    dw `03000030
+    dw `00333300
+    dw `00033000
+    dw `00033000
+    dw `00033000
+    dw `33333333
+    dw `00033000
+    dw `00033000
+    dw `00033000
+    dw `00333300
+    dw `03300330
+    dw `33000033
+PlayerEnd:
+
 SECTION "Input Variables", WRAM0
 wCurKeys: db
 wNewKeys: db
@@ -487,3 +572,5 @@ wInverseVelocity: db
 wFrameCounter: db
 wPlayerDirection: db
 wGravityCounter: db
+wSpriteChangeTimer: db  ; Timer for sprite change
+wOriginalTile: db       ; Store the original tile ID
