@@ -839,25 +839,27 @@ ContinueCalc:
 ; @return z: set if a is a wall.
 IsWallTile:
     ; top platform
-    cp a, $40
+    cp a, $43
     ret z
-    cp a, $41
-    ret z
-    cp a, $42
+    cp a, $44
     ret z
     ; left platform
-    cp a, $68
+    cp a, $6C
     ret z
-    cp a, $69
-    ret z
-    cp a, $6A
-    ret z
-    ; right platform
     cp a, $6D
     ret z
     cp a, $6E
     ret z
     cp a, $6F
+    ret z
+    ; right platform
+    cp a, $71
+    ret z
+    cp a, $72
+    ret z
+    cp a, $73
+    ret z
+    cp a, $74
     ret z
     ; base platform
     call IsBaseTile
@@ -866,14 +868,6 @@ IsWallTile:
 ; @param a: tile ID
 ; @return z: set if a is a base.
 IsBaseTile:
-    cp a, $9E
-    ret z
-    cp a, $9F
-    ret z
-    cp a, $A0
-    ret z
-    cp a, $A1
-    ret z
     cp a, $A2
     ret z
     cp a, $A3
@@ -889,7 +883,15 @@ IsBaseTile:
     cp a, $A8
     ret z
     cp a, $A9
-    ret
+    ret z
+    cp a, $AA
+    ret z
+    cp a, $AB
+    ret z
+    cp a, $AC
+    ret z
+    cp a, $AD
+    ret 
 
 UpdateSprite1:
     call CheckA1
