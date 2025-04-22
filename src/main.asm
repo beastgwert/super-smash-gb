@@ -77,20 +77,23 @@ WaitVBlank:
 
     ; Initialize global variables
     xor a
-    ld [wFrameCounter1], a
     ld [wCurKeys1], a
     ld [wCurKeys2], a
+
+    ld [wFrameCounter1], a
     ld [wInverseVelocity1], a
     ld [wGravityCounter1], a
     ld [wSpriteChangeTimer1], a
     ld [wOriginalTile1], a
     ld [wSpeedCounter1], a
+
     ld [wFrameCounter2], a
     ld [wInverseVelocity2], a
     ld [wGravityCounter2], a
     ld [wSpriteChangeTimer2], a
     ld [wOriginalTile2], a
     ld [wSpeedCounter2], a
+
     ld [wPlayer1HP], a
     ld [wPlayer2HP], a
     ld [wPlayer1HPTens], a
@@ -98,6 +101,9 @@ WaitVBlank:
     ld [wPlayer2HPTens], a
     ld [wPlayer2HPOnes], a
 
+    ld a, 16
+    ld [wPlayerHitbox1], a
+    ld [wPlayerHitbox2], a
 Main:
     call ResetShadowOAM
 
@@ -436,6 +442,34 @@ SetDefaultSprite1:
     ld [hli], a
     ret
 
+; Check if a pixel intersects with player's hitbox
+; @param b: pixel X
+; @param c: pixel Y
+; @return c (flag): set if player is hit
+HitsPlayer1:
+    ; check right X >= pixel X
+    ld a, [wShadowOAM+1]
+    cp a, b
+    ccf
+    ret nc
+    ; check left X < pixel X
+    sub a, 8
+    cp a, b
+    ret nc
+    ; check bottom Y >= pixel Y
+    ld a, [wShadowOAM]
+    cp a, c
+    ccf
+    ret nc
+    ; check top Y < pixel Y
+    ld h, a
+    ld a, [wPlayerHitbox1]
+    ld b, a
+    ld a, h
+    sub a, b
+    cp a, c
+    ret
+
 ; Update the player's position based on their velocity
 ; @param de address in OAM
 UpdatePlayer2:
@@ -687,6 +721,35 @@ CheckA2:
     and a, PADF_A                ; Check if A button is pressed (S on keyboard)
     ret z                        ; Return if A is not pressed
     
+    ; Check attack
+    ld h, d
+    ld l, e
+    ld a, [hli]
+    ld c, 8
+    sub a, c
+    ld c, a
+    ld a, [hl]
+    ld b, 3
+    sub a, b
+    ld b, a
+    ; Check direction
+    ld hl, 3
+    add hl, de
+    ld a, [hl]
+    cp a, 0
+    jp nz, FacesLeft
+    ld a, 6
+    add a, b
+    ld b, a
+FacesLeft:
+    call HitsPlayer1
+    jp nc, SetAttackSprite2
+
+    ; Perform attack
+    ld a, [wPlayer1HP]
+    inc a
+    ld [wPlayer1HP], a
+
     ; A was pressed and timer is 0, switch to attack sprite
     jp SetAttackSprite2           ; Switch to attack sprite and start the timer
 
@@ -1125,6 +1188,7 @@ wGravityCounter1: db
 wSpeedCounter1: db
 wSpriteChangeTimer1: db  ; Timer for sprite change
 wOriginalTile1: db       ; Store the original tile ID
+wPlayerHitbox1: db
 
 SECTION "Player 2 Data", WRAM0
 wPlayerDirection2: db
@@ -1134,6 +1198,7 @@ wGravityCounter2: db
 wSpeedCounter2: db
 wSpriteChangeTimer2: db  ; Timer for sprite change
 wOriginalTile2: db       ; Store the original tile ID
+wPlayerHitbox2: db
 
 SECTION "HP Data", WRAM0
 wPlayer1HP:: db
