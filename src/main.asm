@@ -57,8 +57,9 @@ WaitVBlank:
     ld [hli], a
     ld a, 48 + 8
     ld [hli], a
-    xor a
+    ld a, [CSSselectionState]
     ld [hli], a
+    xor a
     ld [hli], a
 
 	; Turn the LCD on
@@ -391,7 +392,8 @@ SetAttackSprite1:
     ld [hli], a
     ld a, [hl]                   ; Preserve X position
     ld [hli], a
-    ld a, 2                      ; Set tile ID to 2 (attack sprite)
+    ld a, [CSSselectionState]
+    add a, 2                      ; Set tile ID to 2 (attack sprite)
     ld [hli], a
     ld a, [hl]       ; Preserve the original attributes (flip flags, etc.)
     ld [hli], a
@@ -412,7 +414,7 @@ SetDefaultSprite1:
     ld [hli], a
     ld a, [hl]                   ; Preserve X position
     ld [hli], a
-    xor a                        ; Set tile ID to 0 (default sprite)
+    ld a, [CSSselectionState]                        ; Set tile ID to 0 (default sprite)
     ld [hli], a
     ret
 
