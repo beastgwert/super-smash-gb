@@ -51,6 +51,12 @@ CSSClearOam:
     ld a, %11100100
     ld [rOBP0], a
 
+    ; Enable second joypad input
+    call check_sgb
+
+    ld a, P1F_GET_NONE
+    ldh [rP1], a
+
 CSSMain:
     ; Check the current keys every frame and move left or right.
     call CSSUpdateKeys

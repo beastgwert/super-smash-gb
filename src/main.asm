@@ -89,12 +89,6 @@ WaitVBlank:
     ld [wOriginalTile2], a
     ld [wSpeedCounter2], a
 
-    ; Enable second joypad input
-    call check_sgb
-
-    ld a, P1F_GET_NONE
-    ldh [rP1], a
-
 Main:
     call ResetShadowOAM
 
