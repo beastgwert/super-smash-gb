@@ -739,14 +739,14 @@ IsGrounded:
 
 UpdateKeys:
     ; Poll half the controller
-    ld a, P1F_GET_BTN
-    call .onenibble
-    ld b, a ; B7-4 = 1; B3-0 = unpressed buttons
-
-    ; Poll the other half
     ld a, P1F_GET_DPAD
     call .onenibble
     swap a ; A7-4 = unpressed directions; A3-0 = 1
+    ld b, a ; B7-4 = 1; B3-0 = unpressed buttons
+
+    ; Poll the other half
+    ld a, P1F_GET_BTN
+    call .onenibble
     xor a, b ; A = pressed buttons + directions
     ld b, a ; B = pressed buttons + directions
 
@@ -759,14 +759,14 @@ UpdateKeys:
     ld [wCurKeys1], a
 
     ; Poll half the controller
-    ld a, P1F_GET_BTN
-    call .onenibble
-    ld b, a ; B7-4 = 1; B3-0 = unpressed buttons
-
-    ; Poll the other half
     ld a, P1F_GET_DPAD
     call .onenibble
     swap a ; A7-4 = unpressed directions; A3-0 = 1
+    ld b, a ; B7-4 = 1; B3-0 = unpressed buttons
+
+    ; Poll the other half
+    ld a, P1F_GET_BTN
+    call .onenibble
     xor a, b ; A = pressed buttons + directions
     ld b, a ; B = pressed buttons + directions
 
