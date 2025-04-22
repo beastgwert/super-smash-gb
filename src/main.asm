@@ -1,6 +1,7 @@
 INCLUDE "hardware.inc"
 INCLUDE "arena-background.asm"
 INCLUDE "characters.asm"
+INCLUDE "digits.asm"
 INCLUDE "utils/sprobjs_lib.asm"
 INCLUDE "character-selection.asm"
 INCLUDE "utils/sgb-utils.asm"
@@ -30,7 +31,9 @@ WaitVBlank:
 
     call InitializeCharacters
 
-    ; Initilize Sprite Object Library.
+    call InitializeDigits
+
+    ; Initialize Sprite Object Library.
     call InitSprObjLib
 
     ; Reset hardware OAM
