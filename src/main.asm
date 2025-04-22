@@ -86,6 +86,8 @@ WaitVBlank:
     ld [wSpriteChangeTimer1], a
     ld [wOriginalTile1], a
     ld [wSpeedCounter1], a
+    ld [wPlayerStun1], a
+    ld [wKBDirection1], a
 
     ld [wFrameCounter2], a
     ld [wInverseVelocity2], a
@@ -93,6 +95,8 @@ WaitVBlank:
     ld [wSpriteChangeTimer2], a
     ld [wOriginalTile2], a
     ld [wSpeedCounter2], a
+    ld [wPlayerStun2], a
+    ld [wKBDirection2], a
 
     ld [wPlayer1HP], a
     ld [wPlayer2HP], a
@@ -278,6 +282,21 @@ ResetPlayer1:
 ; Move if an arrow key was pressed
 CheckMovement1:
 
+; Check stun
+ld a, [wPlayerStun1]
+cp a, 0
+jp z, CheckLeft1
+dec a
+ld [wPlayerStun1], a
+ld hl, 1
+add hl, de
+ld a, [hl]
+ld b, a
+ld a, [wKBDirection1]
+add a, b
+ld [hl], a
+ret
+
 ; Check the left button.
 CheckLeft1:
     ld a, [wCurKeys1]
@@ -430,17 +449,33 @@ CheckA1:
     ld a, [hl]
     cp a, 0
     jp nz, FacesLeft1
+    ; Faces right
     ld a, 6
     add a, b
     ld b, a
+    ld a, 1
+    ld [wKBDirection2], a
+    jp CheckHit1
 FacesLeft1:
+    ld a, -1
+    ld [wKBDirection2], a
+CheckHit1:
     call HitsPlayer2
     jp nc, SetAttackSprite1
 
     ; Perform attack
     ld a, [wPlayer2HP]
-    inc a
+    add a, 5
     ld [wPlayer2HP], a
+
+    ; Apply knockback
+    ld [wPlayerStun2], a
+    xor a
+    ld [wPlayerDirection2], a
+    ld [wFrameCounter2], a
+    ld [wGravityCounter2], a
+    ld a, 1
+    ld [wInverseVelocity2], a
 
     ; A was pressed and timer is 0, switch to attack sprite
     jp SetAttackSprite1           ; Switch to attack sprite and start the timer
@@ -661,6 +696,21 @@ ResetPlayer2:
 ; Move if an arrow key was pressed
 CheckMovement2:
 
+; Check stun
+ld a, [wPlayerStun2]
+cp a, 0
+jp z, CheckLeft2
+dec a
+ld [wPlayerStun2], a
+ld hl, 1
+add hl, de
+ld a, [hl]
+ld b, a
+ld a, [wKBDirection2]
+add a, b
+ld [hl], a
+ret
+
 ; Check the left button.
 CheckLeft2:
     ld a, [wCurKeys2]
@@ -813,17 +863,33 @@ CheckA2:
     ld a, [hl]
     cp a, 0
     jp nz, FacesLeft2
+    ; Faces right
     ld a, 6
     add a, b
     ld b, a
+    ld a, 1
+    ld [wKBDirection1], a
+    jp CheckHit2
 FacesLeft2:
+    ld a, -1
+    ld [wKBDirection1], a
+CheckHit2:
     call HitsPlayer1
     jp nc, SetAttackSprite2
 
     ; Perform attack
     ld a, [wPlayer1HP]
-    inc a
+    add a, 5
     ld [wPlayer1HP], a
+
+    ; Apply knockback
+    ld [wPlayerStun1], a
+    xor a
+    ld [wPlayerDirection1], a
+    ld [wFrameCounter1], a
+    ld [wGravityCounter1], a
+    ld a, 1
+    ld [wInverseVelocity1], a
 
     ; A was pressed and timer is 0, switch to attack sprite
     jp SetAttackSprite2           ; Switch to attack sprite and start the timer
@@ -1293,6 +1359,8 @@ wSpriteChangeTimer1: db  ; Timer for sprite change
 wOriginalTile1: db       ; Store the original tile ID
 wPlayerHitbox1: db
 wPlayerLives1: db
+wPlayerStun1: db
+wKBDirection1: db
 
 SECTION "Player 2 Data", WRAM0
 wPlayerDirection2: db
@@ -1304,6 +1372,8 @@ wSpriteChangeTimer2: db  ; Timer for sprite change
 wOriginalTile2: db       ; Store the original tile ID
 wPlayerHitbox2: db
 wPlayerLives2: db
+wPlayerStun2: db
+wKBDirection2: db
 
 SECTION "HP Data", WRAM0
 wPlayer1HP:: db
