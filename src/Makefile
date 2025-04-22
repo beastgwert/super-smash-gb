@@ -1,7 +1,7 @@
 all:
 	rgbasm -o main.o main.asm
 	rgblink -o super-smash.gb main.o
-	rgbfix -v -p 0xFF super-smash.gb
+	rgbfix -v -l 0x33 -s -p 0xFF super-smash.gb
 
 character-selection: 
 	rgbasm -o character-selection.o character-selection.asm
