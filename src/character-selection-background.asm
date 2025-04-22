@@ -1,5 +1,5 @@
 INCLUDE "hardware.inc"
-INCLUDE "utils/memory-utils.asm"
+; INCLUDE "utils/memory-utils.asm"
 
 SECTION "CharacterSelectionBackgroundSection", ROMX, BANK[1]
 

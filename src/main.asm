@@ -2,11 +2,12 @@ INCLUDE "hardware.inc"
 INCLUDE "arena-background.asm"
 INCLUDE "characters.asm"
 INCLUDE "utils/sprobjs_lib.asm"
+INCLUDE "character-selection.asm"
 INCLUDE "utils/sgb-utils.asm"
 
 SECTION "Header", ROM0[$100]
 
-	jp EntryPoint
+	jp CSSEntryPoint
 
 	ds $150 - @, 0 ; Make room for the header
 
@@ -47,8 +48,9 @@ WaitVBlank:
     ld [hli], a
     ld a, 80 + 8
     ld [hli], a
-    xor a
+    ld a, [CSSselectionState]
     ld [hli], a
+    xor a
     ld [hli], a
 
     ld a, 16 + 16
@@ -682,7 +684,8 @@ SetAttackSprite2:
     ld [hli], a
     ld a, [hl]                   ; Preserve X position
     ld [hli], a
-    ld a, 2                      ; Set tile ID to 2 (attack sprite)
+    ld a, [CSSselectionState]    ; Set tile ID to 2 (attack sprite)
+    add a, 2
     ld [hli], a
     ld a, [hl]       ; Preserve the original attributes (flip flags, etc.)
     ld [hli], a
@@ -703,8 +706,9 @@ SetDefaultSprite2:
     ld [hli], a
     ld a, [hl]                   ; Preserve X position
     ld [hli], a
-    xor a                        ; Set tile ID to 0 (default sprite)
+    ld a, [CSSselectionState]                        ; Set tile ID to 0 (default sprite)
     ld [hli], a
+    xor a
     ret
 
 ; Check if player is on the ground
