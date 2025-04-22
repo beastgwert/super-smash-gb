@@ -115,10 +115,10 @@ Main:
     call UpdateSprite2
 
     ; Test HP functionality - increase HP when certain keys are pressed
-    ; call TestHPFunctionality
+    call TestHPFunctionality
 
     ; Update HP display when needed (in a real game, this would be called when damage is taken)
-    ; call UpdateHPDisplay
+    call UpdateHPDisplay
 
     ldh a, [rLY]
 	cp 144
