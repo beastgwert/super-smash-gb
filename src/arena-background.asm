@@ -25,4 +25,13 @@ InitializeBackground::
     ld hl, $9800           ; Destination: the tilemap area in VRAM
     ld bc, arenaMapEnd - arenaMap  ; Length of our tilemap data
     call MemcopyOffset48  ; Return when done
+
+    ld de, arenaMap        ; Source: our tilemap data
+    ld hl, wShadowBG          ; Destination: the tilemap area in VRAM
+    ld bc, arenaMapEnd - arenaMap  ; Length of our tilemap data
+    call MemcopyOffset48  ; Return when done
     ret
+
+SECTION "Shadow BG", WRAM0, ALIGN[8]
+wShadowBG::
+  ds 1024

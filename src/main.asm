@@ -355,6 +355,15 @@ Down1:
     ld b, a
     call IsGrounded
     ret nz
+    ; Do not move down if on the base tile
+    ld h, d
+    ld l, e
+    ld a, [hli]
+    ld c, a
+    ld a, [hl]
+    ld b, a
+    call IsBased
+    ret z
     ld h, d
     ld l, e
     ld a, [hl]
@@ -649,6 +658,15 @@ Down2:
     ld b, a
     call IsGrounded
     ret nz
+    ; Do not move down if on the base tile
+    ld h, d
+    ld l, e
+    ld a, [hli]
+    ld c, a
+    ld a, [hl]
+    ld b, a
+    call IsBased
+    ret z
     ld h, d
     ld l, e
     ld a, [hl]
@@ -752,6 +770,36 @@ IsGrounded:
 
     ret
 
+; Check if player is on the base platform
+; @param b: X (bottom right)
+; @param c: Y (bottom right)
+; @return z: set if based
+IsBased:
+    ; Check bottom right
+    call GetTileByPixel
+    ld a, [hl]
+    call IsBaseTile
+    ret z
+
+    ; Check bottom middle
+    ld a, b
+    sub a, 4
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsBaseTile
+    ret z
+
+    ; Check bottom left
+    ld a, b
+    sub a, 4
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsBaseTile
+
+    ret
+
 UpdateKeys:
     ; Poll half the controller
     ld a, P1F_GET_DPAD
@@ -819,7 +867,8 @@ GetTileByPixel:
     jp z, ContinueCalc
     cp a, 1
     jp z, ContinueCalc
-    ld hl, 0
+    ; Byte at address $014C should always be 0
+    ld hl, $014C
     ret
 ContinueCalc:
     ; First, we need to divide by 8 to convert a pixel position to a tile position.
@@ -845,7 +894,7 @@ ContinueCalc:
     ld h, a
     ; Add the offset to the tilemap's base address, and we are done!
     push bc
-    ld bc, $9800
+    ld bc, wShadowBG
     add hl, bc
     pop bc
     ret
@@ -863,8 +912,8 @@ IsWallTile:
     ret z
     cp a, $7D
     ret z
-    ; cp a, $7E ; if this section is included, a will always be 7E (stuck inside a wall) <--- FIX
-    ; ret z
+    cp a, $7E
+    ret z
     cp a, $7F
     ret z
     ; right platform
