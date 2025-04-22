@@ -800,6 +800,19 @@ IsBased:
 
     ret
 
+transferControls:
+    ; Assume data is in register a
+    ; ldh [rSB], a -- Commenting this portion out because we're not sending data
+    ld a, $81 ; this is 81 beacuse it's the owner, set it to 80 for sub-routine
+    ldh [rSC], a
+    .waitTransfer
+        ldh a, [rSC]
+        and $80 ; check if transfer still in progress
+        jr nz, .waitTransfer ; wait until done
+    ldh a, [rSB]
+    ret
+
+
 UpdateKeys:
     ; Poll half the controller
     ld a, P1F_GET_DPAD
@@ -821,29 +834,17 @@ UpdateKeys:
     ld a, b
     ld [wCurKeys1], a
 
-    ; Poll half the controller
-    ld a, P1F_GET_DPAD
-    call .onenibble
-    swap a ; A7-4 = unpressed directions; A3-0 = 1
-    ld b, a ; B7-4 = 1; B3-0 = unpressed buttons
+    ; Receive data from sub player
+    di
+    call transferControls
+    ld [wCurKeys2], a
+    call transferControls
+    ld [wNewKeys2], a
+    ei
 
-    ; Poll the other half
-    ld a, P1F_GET_BTN
-    call .onenibble
-    xor a, b ; A = pressed buttons + directions
-    ld b, a ; B = pressed buttons + directions
-
-    ; And release the controller
     ld a, P1F_GET_NONE
     ldh [rP1], a
 
-    ; Combine with previous wCurKeys to make wNewKeys
-    ld a, [wCurKeys2]
-    xor a, b ; A = keys that changed state
-    and a, b ; A = keys that changed to pressed
-    ld [wNewKeys2], a
-    ld a, b
-    ld [wCurKeys2], a
     ret
 .onenibble
     ldh [rP1], a ; switch the key matrix
