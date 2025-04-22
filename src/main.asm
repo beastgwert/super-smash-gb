@@ -47,18 +47,18 @@ WaitVBlank:
 
     ; Initialize the player in OAM
     ld hl, wShadowOAM
-    ld a, 16 + 16
+    ld a, 56 + 16
     ld [hli], a
-    ld a, 80 + 8
+    ld a, 112 + 8
     ld [hli], a
     ld a, [CSSselectionState1]
     ld [hli], a
     xor a
     ld [hli], a
 
-    ld a, 16 + 16
+    ld a, 56 + 16
     ld [hli], a
-    ld a, 48 + 8
+    ld a, 56 + 8
     ld [hli], a
     ld a, [CSSselectionState2]
     ld [hli], a
@@ -104,6 +104,10 @@ WaitVBlank:
     ld a, 16
     ld [wPlayerHitbox1], a
     ld [wPlayerHitbox2], a
+
+    ld a, 3
+    ld [wPlayerLives1], a
+    ld [wPlayerLives2], a
 Main:
     call ResetShadowOAM
 
@@ -120,10 +124,6 @@ Main:
     call CheckMovement2
     call UpdateSprite2
 
-    ; Test HP functionality - increase HP when certain keys are pressed
-    call TestHPFunctionality
-
-    ; Update HP display when needed (in a real game, this would be called when damage is taken)
     call UpdateHPDisplay
 
     ldh a, [rLY]
@@ -203,6 +203,8 @@ MaximumVelocity1:
     ld l, e
     ld a, [hl]
     add a, 2
+    ; Check if player falls off screen
+    jp c, ResetPlayer1
     ld c, a
     ld [hli], a
     ld a, [hl]
@@ -250,6 +252,27 @@ ApplyGravity1:
 HitsCeiling1:
     xor a
     ld [wInverseVelocity1], a
+    ret
+
+; Reset player when they lose a life
+ResetPlayer1:
+    ld a, [wPlayerLives1]
+    dec a
+    jp z, CSSEntryPoint
+    ld [wPlayerLives1], a
+    ld h, d
+    ld l, e
+    ld a, 0
+    ld [hli], a
+    ld [hl], 80 + 8
+    xor a
+    ld [wPlayer1HP], a
+    ld [wFrameCounter1], a
+    ld [wInverseVelocity1], a
+    ld [wGravityCounter1], a
+    ld [wSpriteChangeTimer1], a
+    ld [wOriginalTile1], a
+    ld [wSpeedCounter1], a
     ret
 
 ; Move if an arrow key was pressed
@@ -563,6 +586,8 @@ MaximumVelocity2:
     ld l, e
     ld a, [hl]
     add a, 2
+    ; Check if player falls off screen
+    jp c, ResetPlayer2
     ld c, a
     ld [hli], a
     ld a, [hl]
@@ -610,6 +635,27 @@ ApplyGravity2:
 HitsCeiling2:
     xor a
     ld [wInverseVelocity2], a
+    ret
+
+; Reset player when they lose a life
+ResetPlayer2:
+    ld a, [wPlayerLives2]
+    dec a
+    jp z, CSSEntryPoint
+    ld [wPlayerLives2], a
+    ld h, d
+    ld l, e
+    ld a, 0
+    ld [hli], a
+    ld [hl], 80 + 8
+    xor a
+    ld [wPlayer2HP], a
+    ld [wFrameCounter2], a
+    ld [wInverseVelocity2], a
+    ld [wGravityCounter2], a
+    ld [wSpriteChangeTimer2], a
+    ld [wOriginalTile2], a
+    ld [wSpeedCounter2], a
     ret
 
 ; Move if an arrow key was pressed
@@ -1246,6 +1292,7 @@ wSpeedCounter1: db
 wSpriteChangeTimer1: db  ; Timer for sprite change
 wOriginalTile1: db       ; Store the original tile ID
 wPlayerHitbox1: db
+wPlayerLives1: db
 
 SECTION "Player 2 Data", WRAM0
 wPlayerDirection2: db
@@ -1256,6 +1303,7 @@ wSpeedCounter2: db
 wSpriteChangeTimer2: db  ; Timer for sprite change
 wOriginalTile2: db       ; Store the original tile ID
 wPlayerHitbox2: db
+wPlayerLives2: db
 
 SECTION "HP Data", WRAM0
 wPlayer1HP:: db
