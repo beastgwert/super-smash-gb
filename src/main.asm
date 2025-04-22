@@ -390,6 +390,35 @@ CheckA1:
     and a, PADF_A                ; Check if A button is pressed (S on keyboard)
     ret z                        ; Return if A is not pressed
     
+; Check attack
+    ld h, d
+    ld l, e
+    ld a, [hli]
+    ld c, 8
+    sub a, c
+    ld c, a
+    ld a, [hl]
+    ld b, 3
+    sub a, b
+    ld b, a
+    ; Check direction
+    ld hl, 3
+    add hl, de
+    ld a, [hl]
+    cp a, 0
+    jp nz, FacesLeft1
+    ld a, 6
+    add a, b
+    ld b, a
+FacesLeft1:
+    call HitsPlayer2
+    jp nc, SetAttackSprite1
+
+    ; Perform attack
+    ld a, [wPlayer2HP]
+    inc a
+    ld [wPlayer2HP], a
+
     ; A was pressed and timer is 0, switch to attack sprite
     jp SetAttackSprite1           ; Switch to attack sprite and start the timer
 
@@ -737,11 +766,11 @@ CheckA2:
     add hl, de
     ld a, [hl]
     cp a, 0
-    jp nz, FacesLeft
+    jp nz, FacesLeft2
     ld a, 6
     add a, b
     ld b, a
-FacesLeft:
+FacesLeft2:
     call HitsPlayer1
     jp nc, SetAttackSprite2
 
@@ -801,6 +830,34 @@ SetDefaultSprite2:
     ld a, [CSSselectionState2]                        ; Set tile ID to 0 (default sprite)
     ld [hli], a
     xor a
+    ret
+
+; Check if a pixel intersects with player's hitbox
+; @param b: pixel X
+; @param c: pixel Y
+; @return c (flag): set if player is hit
+HitsPlayer2:
+    ; check right X >= pixel X
+    ld a, [wShadowOAM+5]
+    cp a, b
+    ccf
+    ret nc
+    ; check left X < pixel X
+    sub a, 8
+    cp a, b
+    ret nc
+    ; check bottom Y >= pixel Y
+    ld a, [wShadowOAM+4]
+    cp a, c
+    ccf
+    ret nc
+    ; check top Y < pixel Y
+    ld h, a
+    ld a, [wPlayerHitbox2]
+    ld b, a
+    ld a, h
+    sub a, b
+    cp a, c
     ret
 
 ; Check if player is on the ground
