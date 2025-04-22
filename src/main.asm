@@ -51,6 +51,14 @@ WaitVBlank:
     ld [hli], a
     ld [hli], a
 
+    ld a, 16 + 16
+    ld [hli], a
+    ld a, 48 + 8
+    ld [hli], a
+    xor a
+    ld [hli], a
+    ld [hli], a
+
 	; Turn the LCD on
 	ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON | LCDCF_OBJ16 | LCDCF_BG8000
 	ld [rLCDC], a
@@ -63,34 +71,42 @@ WaitVBlank:
 
     ; Initialize global variables
     xor a
-    ld [wFrameCounter], a
+    ld [wFrameCounter1], a
     ld [wCurKeys1], a
     ld [wCurKeys2], a
-    ld [wInverseVelocity], a
-    ld [wGravityCounter], a
-    ld [wSpriteChangeTimer], a
-    ld [wOriginalTile], a
-    ld [wSpeedCounter], a
+    ld [wInverseVelocity1], a
+    ld [wGravityCounter1], a
+    ld [wSpriteChangeTimer1], a
+    ld [wOriginalTile1], a
+    ld [wSpeedCounter1], a
+    ld [wFrameCounter2], a
+    ld [wInverseVelocity2], a
+    ld [wGravityCounter2], a
+    ld [wSpriteChangeTimer2], a
+    ld [wOriginalTile2], a
+    ld [wSpeedCounter2], a
 
     ; Enable second joypad input
     call check_sgb
 
+    ld a, P1F_GET_NONE
+    ldh [rP1], a
+
 Main:
     call ResetShadowOAM
 
-    ; Check the current keys every frame and move left or right.
+    ; Check the current keys every frame.
     call UpdateKeys
-    ld a, [wCurKeys]
-    ld [wCurKeys1], a
-    call UpdateKeys
-    ld a, [wCurKeys]
-    ld [wCurKeys2], a
 
-    call UpdatePlayer
+    ld de, wShadowOAM
+    call UpdatePlayer1
+    call CheckMovement1
+    call UpdateSprite1
 
-    call CheckMovement
-
-    call UpdateSprite
+    ld de, wShadowOAM+4
+    call UpdatePlayer2
+    call CheckMovement2
+    call UpdateSprite2
 
     ldh a, [rLY]
 	cp 144
@@ -106,109 +122,589 @@ WaitVBlank2:
     jp Main
 
 ; Update the player's position based on their velocity
-UpdatePlayer:
-    ld a, [wShadowOAM+1]
-    ld b, a
-    ld a, [wShadowOAM]
+; @param de address in OAM
+UpdatePlayer1:
+    ld h, d
+    ld l, e
+    ld a, [hli]
     ld c, a
+    ld a, [hl]
+    ld b, a
     call IsGrounded
-    jp nz, InAir
+    jp nz, InAir1
     ; Set velocity to 0 if on ground
-    ld a, [wPlayerDirection]
+    ld a, [wPlayerDirection1]
     cp a, 0
     ret nz
-InAir:
-    ld a, [wInverseVelocity]
+InAir1:
+    ld a, [wInverseVelocity1]
     cp a, 0
-    jp nz, NonZeroVelocity
+    jp nz, NonZeroVelocity1
     ld a, 4
-    ld [wInverseVelocity], a
+    ld [wInverseVelocity1], a
     ld a, 1
-    ld [wPlayerDirection], a
-NonZeroVelocity:
-    ld a, [wInverseVelocity]
-    ld d, a
-    ld a, [wFrameCounter]
-    inc a
-    cp a, d
-    jp z, UpdatePosition
-    ld [wFrameCounter], a
-    ret
-UpdatePosition:
-    xor a
-    ld [wFrameCounter], a
-    ld a, [wPlayerDirection]
-    cp a, 0
-    jp z, MovesUp
-    ld a, [wInverseVelocity]
-    cp a, 1
-    jp z, MaximumVelocity
-    ; Check if gravity counter is correct
-    ld a, [wGravityCounter]
-    inc a
-    ld [wGravityCounter], a
+    ld [wPlayerDirection1], a
+NonZeroVelocity1:
+    ld a, [wInverseVelocity1]
     ld b, a
-    ld a, [wInverseVelocity]
+    ld a, [wFrameCounter1]
+    inc a
+    cp a, b
+    jp z, UpdatePosition1
+    ld [wFrameCounter1], a
+    ret
+UpdatePosition1:
+    xor a
+    ld [wFrameCounter1], a
+    ld a, [wPlayerDirection1]
+    cp a, 0
+    jp z, MovesUp1
+    ld a, [wInverseVelocity1]
+    cp a, 1
+    jp z, MaximumVelocity1
+    ; Check if gravity counter is correct
+    ld a, [wGravityCounter1]
+    inc a
+    ld [wGravityCounter1], a
+    ld b, a
+    ld a, [wInverseVelocity1]
     ld c, a
     ld a, 6
     sub a, c
     cp a, b
-    jp nz, MaximumVelocity
+    jp nz, MaximumVelocity1
     xor a
-    ld [wGravityCounter], a
+    ld [wGravityCounter1], a
     ; Apply gravity
-    ld a, [wInverseVelocity]
+    ld a, [wInverseVelocity1]
     dec a
-    ld [wInverseVelocity], a
-MaximumVelocity:
+    ld [wInverseVelocity1], a
+MaximumVelocity1:
     ; Move down
-    ld a, [wShadowOAM]
+    ld h, d
+    ld l, e
+    ld a, [hl]
     add a, 2
     ld c, a
-    ld [wShadowOAM], a
-    ld a, [wShadowOAM+1]
+    ld [hli], a
+    ld a, [hl]
     ld b, a
     ; Check if player hits ground
     call IsGrounded
-    jp z, HitsGround
+    jp z, HitsGround1
     ret
-HitsGround:
+HitsGround1:
     xor a
-    ld [wInverseVelocity], a
-    ld [wFrameCounter], a
-    ld [wGravityCounter], a
+    ld [wInverseVelocity1], a
+    ld [wFrameCounter1], a
+    ld [wGravityCounter1], a
     ret
-MovesUp:
+MovesUp1:
     ; Move up
-    ld a, [wShadowOAM]
+    ld h, d
+    ld l, e
+    ld a, [hl]
     sub a, 2
-    ld [wShadowOAM], a
+    ld [hl], a
     ; Update velocity
-    ld a, [wInverseVelocity]
+    ld a, [wInverseVelocity1]
     cp a, 4
-    jp z, HitsCeiling
+    jp z, HitsCeiling1
     ; Check if gravity counter is correct
-    ld a, [wGravityCounter]
+    ld a, [wGravityCounter1]
     inc a
-    ld [wGravityCounter], a
+    ld [wGravityCounter1], a
     ld b, a
-    ld a, [wInverseVelocity]
+    ld a, [wInverseVelocity1]
     ld c, a
     ld a, 6
     sub a, c
     cp a, b
     ret nz
-ApplyGravity:
+ApplyGravity1:
     xor a
-    ld [wGravityCounter], a
+    ld [wGravityCounter1], a
     ; Apply gravity
-    ld a, [wInverseVelocity]
+    ld a, [wInverseVelocity1]
     inc a
-    ld [wInverseVelocity], a
+    ld [wInverseVelocity1], a
     ret
-HitsCeiling:
+HitsCeiling1:
     xor a
-    ld [wInverseVelocity], a
+    ld [wInverseVelocity1], a
+    ret
+
+; Move if an arrow key was pressed
+CheckMovement1:
+
+; Check the left button.
+CheckLeft1:
+    ld a, [wCurKeys1]
+    and a, PADF_LEFT
+    jp z, CheckRight1
+Left1:
+    ; Set the horizontal flip flag (bit 5) in the sprite attributes
+    ld hl, 3
+    add hl, de
+    ld a, [hl]
+    or a, %00100000  ; Set horizontal flip bit (bit 5)
+    ld [hl], a
+
+    ; Check the player speed
+    ld a, [wSpeedCounter1]
+    inc a
+    ld [wSpeedCounter1], a
+    cp a, 2
+    jp nz, CheckUp1
+    xor a
+    ld [wSpeedCounter1], a
+    ; Move the player one pixel to the left.
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    dec a
+    ; If we've already hit the edge of the playfield, don't move.
+    cp a, 0 + 7
+    jp z, CheckUp1
+    ld a, [hl]
+    dec a
+    ld [hl], a
+    jp CheckUp1
+
+; Check the right button.
+CheckRight1:
+    ld a, [wCurKeys1]
+    and a, PADF_RIGHT
+    jp z, CheckUp1
+Right1:
+    ; Clear the horizontal flip flag (bit 5) in the sprite attributes
+    ld hl, 3
+    add hl, de
+    ld a, [hl]
+    and a, %11011111  ; Clear horizontal flip bit (bit 5)
+    ld [hl], a
+
+    ; Check the player speed
+    ld a, [wSpeedCounter1]
+    inc a
+    ld [wSpeedCounter1], a
+    cp a, 2
+    jp nz, CheckUp1
+    xor a
+    ld [wSpeedCounter1], a
+    ; Move the player one pixel to the right.
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    inc a
+    ; If we've already hit the edge of the playfield, don't move.
+    cp a, 161
+    jp z, CheckUp1
+    ld a, [hl]
+    inc a
+    ld [hl], a
+    jp CheckUp1
+
+; Check the up button.
+CheckUp1:
+    ld a, [wCurKeys1]
+    and a, PADF_UP
+    jp z, CheckDown1
+Up1:
+    ; Jump if on the ground
+    ld h, d
+    ld l, e
+    ld a, [hli]
+    ld c, a
+    ld a, [hl]
+    ld b, a
+    call IsGrounded
+    ret nz
+    xor a
+    ld [wPlayerDirection1], a
+    ld [wFrameCounter1], a
+    ld [wGravityCounter1], a
+    ld a, 1
+    ld [wInverseVelocity1], a
+    ret
+
+; Check the down button.
+CheckDown1:
+    ld a, [wCurKeys1]
+    and a, PADF_DOWN
+    ret z
+Down1:
+    ; Move down if on the ground
+    ld h, d
+    ld l, e
+    ld a, [hli]
+    ld c, a
+    ld a, [hl]
+    ld b, a
+    call IsGrounded
+    ret nz
+    ld h, d
+    ld l, e
+    ld a, [hl]
+    add a, 2
+    ld [hl], a
+    ret
+
+; When A is pressed, toggle between default sprite (tile 0) and attack sprite (tile 2)
+; After half a second, it will automatically switch back
+CheckA1:
+    ; First check if the timer is already active
+    ld a, [wSpriteChangeTimer1]   ; Check if timer is active
+    cp a, 0
+    jp nz, DecrementAttackTimer1        ; If timer is not 0, just decrement it
+    
+    ; Timer is 0, check if A was pressed
+    ld a, [wCurKeys1]             ; Load the current keys state
+    and a, PADF_A                ; Check if A button is pressed (S on keyboard)
+    ret z                        ; Return if A is not pressed
+    
+    ; A was pressed and timer is 0, switch to attack sprite
+    jp SetAttackSprite1           ; Switch to attack sprite and start the timer
+
+DecrementAttackTimer1:
+    ; Timer is active, decrement it regardless of button state
+    ld a, [wSpriteChangeTimer1]
+    dec a                        ; Decrement timer
+    ld [wSpriteChangeTimer1], a
+    
+    ; If timer reached 0, switch back to default sprite
+    cp a, 0
+    ret nz                       ; Return if timer is not yet 0
+    
+    ; Timer reached 0, switch back to default sprite
+    jp SetDefaultSprite1
+    
+; Switch to attack tile (tile 2)
+SetAttackSprite1:
+    ld a, 1
+    ld [wOriginalTile1], a        ; Mark that we're using the attack tile
+    ld h, d            ; Point to OAM data for the sprite
+    ld l, e
+    ld a, [hl]                   ; Preserve Y position
+    ld [hli], a
+    ld a, [hl]                   ; Preserve X position
+    ld [hli], a
+    ld a, 2                      ; Set tile ID to 2 (attack sprite)
+    ld [hli], a
+    ld a, [hl]       ; Preserve the original attributes (flip flags, etc.)
+    ld [hli], a
+    
+    ; Set timer for how long to display the attack sprite
+    ; 30 frames ≈ 0.5 seconds at 60fps
+    ld a, 60
+    ld [wSpriteChangeTimer1], a
+    ret
+
+; Switch back to default tile (0)
+SetDefaultSprite1:
+    xor a
+    ld [wOriginalTile1], a        ; Mark that we're using the default tile
+    ld h, d            ; Point to OAM data for the sprite
+    ld l, e
+    ld a, [hl]                   ; Preserve Y position
+    ld [hli], a
+    ld a, [hl]                   ; Preserve X position
+    ld [hli], a
+    xor a                        ; Set tile ID to 0 (default sprite)
+    ld [hli], a
+    ret
+
+; Update the player's position based on their velocity
+; @param de address in OAM
+UpdatePlayer2:
+    ld h, d
+    ld l, e
+    ld a, [hli]
+    ld c, a
+    ld a, [hl]
+    ld b, a
+    call IsGrounded
+    jp nz, InAir2
+    ; Set velocity to 0 if on ground
+    ld a, [wPlayerDirection2]
+    cp a, 0
+    ret nz
+InAir2:
+    ld a, [wInverseVelocity2]
+    cp a, 0
+    jp nz, NonZeroVelocity2
+    ld a, 4
+    ld [wInverseVelocity2], a
+    ld a, 1
+    ld [wPlayerDirection2], a
+NonZeroVelocity2:
+    ld a, [wInverseVelocity2]
+    ld b, a
+    ld a, [wFrameCounter2]
+    inc a
+    cp a, b
+    jp z, UpdatePosition2
+    ld [wFrameCounter2], a
+    ret
+UpdatePosition2:
+    xor a
+    ld [wFrameCounter2], a
+    ld a, [wPlayerDirection2]
+    cp a, 0
+    jp z, MovesUp2
+    ld a, [wInverseVelocity2]
+    cp a, 1
+    jp z, MaximumVelocity2
+    ; Check if gravity counter is correct
+    ld a, [wGravityCounter2]
+    inc a
+    ld [wGravityCounter2], a
+    ld b, a
+    ld a, [wInverseVelocity2]
+    ld c, a
+    ld a, 6
+    sub a, c
+    cp a, b
+    jp nz, MaximumVelocity2
+    xor a
+    ld [wGravityCounter2], a
+    ; Apply gravity
+    ld a, [wInverseVelocity2]
+    dec a
+    ld [wInverseVelocity2], a
+MaximumVelocity2:
+    ; Move down
+    ld h, d
+    ld l, e
+    ld a, [hl]
+    add a, 2
+    ld c, a
+    ld [hli], a
+    ld a, [hl]
+    ld b, a
+    ; Check if player hits ground
+    call IsGrounded
+    jp z, HitsGround2
+    ret
+HitsGround2:
+    xor a
+    ld [wInverseVelocity2], a
+    ld [wFrameCounter2], a
+    ld [wGravityCounter2], a
+    ret
+MovesUp2:
+    ; Move up
+    ld h, d
+    ld l, e
+    ld a, [hl]
+    sub a, 2
+    ld [hl], a
+    ; Update velocity
+    ld a, [wInverseVelocity2]
+    cp a, 4
+    jp z, HitsCeiling2
+    ; Check if gravity counter is correct
+    ld a, [wGravityCounter2]
+    inc a
+    ld [wGravityCounter2], a
+    ld b, a
+    ld a, [wInverseVelocity2]
+    ld c, a
+    ld a, 6
+    sub a, c
+    cp a, b
+    ret nz
+ApplyGravity2:
+    xor a
+    ld [wGravityCounter2], a
+    ; Apply gravity
+    ld a, [wInverseVelocity2]
+    inc a
+    ld [wInverseVelocity2], a
+    ret
+HitsCeiling2:
+    xor a
+    ld [wInverseVelocity2], a
+    ret
+
+; Move if an arrow key was pressed
+CheckMovement2:
+
+; Check the left button.
+CheckLeft2:
+    ld a, [wCurKeys2]
+    and a, PADF_LEFT
+    jp z, CheckRight2
+Left2:
+    ; Set the horizontal flip flag (bit 5) in the sprite attributes
+    ld hl, 3
+    add hl, de
+    ld a, [hl]
+    or a, %00100000  ; Set horizontal flip bit (bit 5)
+    ld [hl], a
+
+    ; Check the player speed
+    ld a, [wSpeedCounter2]
+    inc a
+    ld [wSpeedCounter2], a
+    cp a, 2
+    jp nz, CheckUp2
+    xor a
+    ld [wSpeedCounter2], a
+    ; Move the player one pixel to the left.
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    dec a
+    ; If we've already hit the edge of the playfield, don't move.
+    cp a, 0 + 7
+    jp z, CheckUp2
+    ld a, [hl]
+    dec a
+    ld [hl], a
+    jp CheckUp2
+
+; Check the right button.
+CheckRight2:
+    ld a, [wCurKeys2]
+    and a, PADF_RIGHT
+    jp z, CheckUp2
+Right2:
+    ; Clear the horizontal flip flag (bit 5) in the sprite attributes
+    ld hl, 3
+    add hl, de
+    ld a, [hl]
+    and a, %11011111  ; Clear horizontal flip bit (bit 5)
+    ld [hl], a
+
+    ; Check the player speed
+    ld a, [wSpeedCounter2]
+    inc a
+    ld [wSpeedCounter2], a
+    cp a, 2
+    jp nz, CheckUp2
+    xor a
+    ld [wSpeedCounter2], a
+    ; Move the player one pixel to the right.
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    inc a
+    ; If we've already hit the edge of the playfield, don't move.
+    cp a, 161
+    jp z, CheckUp2
+    ld a, [hl]
+    inc a
+    ld [hl], a
+    jp CheckUp2
+
+; Check the up button.
+CheckUp2:
+    ld a, [wCurKeys2]
+    and a, PADF_UP
+    jp z, CheckDown2
+Up2:
+    ; Jump if on the ground
+    ld h, d
+    ld l, e
+    ld a, [hli]
+    ld c, a
+    ld a, [hl]
+    ld b, a
+    call IsGrounded
+    ret nz
+    xor a
+    ld [wPlayerDirection2], a
+    ld [wFrameCounter2], a
+    ld [wGravityCounter2], a
+    ld a, 1
+    ld [wInverseVelocity2], a
+    ret
+
+; Check the down button.
+CheckDown2:
+    ld a, [wCurKeys2]
+    and a, PADF_DOWN
+    ret z
+Down2:
+    ; Move down if on the ground
+    ld h, d
+    ld l, e
+    ld a, [hli]
+    ld c, a
+    ld a, [hl]
+    ld b, a
+    call IsGrounded
+    ret nz
+    ld h, d
+    ld l, e
+    ld a, [hl]
+    add a, 2
+    ld [hl], a
+    ret
+
+; When A is pressed, toggle between default sprite (tile 0) and attack sprite (tile 2)
+; After half a second, it will automatically switch back
+CheckA2:
+    ; First check if the timer is already active
+    ld a, [wSpriteChangeTimer2]   ; Check if timer is active
+    cp a, 0
+    jp nz, DecrementAttackTimer2        ; If timer is not 0, just decrement it
+    
+    ; Timer is 0, check if A was pressed
+    ld a, [wCurKeys2]             ; Load the current keys state
+    and a, PADF_A                ; Check if A button is pressed (S on keyboard)
+    ret z                        ; Return if A is not pressed
+    
+    ; A was pressed and timer is 0, switch to attack sprite
+    jp SetAttackSprite2           ; Switch to attack sprite and start the timer
+
+DecrementAttackTimer2:
+    ; Timer is active, decrement it regardless of button state
+    ld a, [wSpriteChangeTimer2]
+    dec a                        ; Decrement timer
+    ld [wSpriteChangeTimer2], a
+    
+    ; If timer reached 0, switch back to default sprite
+    cp a, 0
+    ret nz                       ; Return if timer is not yet 0
+    
+    ; Timer reached 0, switch back to default sprite
+    jp SetDefaultSprite2
+    
+; Switch to attack tile (tile 2)
+SetAttackSprite2:
+    ld a, 1
+    ld [wOriginalTile2], a        ; Mark that we're using the attack tile
+    ld h, d            ; Point to OAM data for the sprite
+    ld l, e
+    ld a, [hl]                   ; Preserve Y position
+    ld [hli], a
+    ld a, [hl]                   ; Preserve X position
+    ld [hli], a
+    ld a, 2                      ; Set tile ID to 2 (attack sprite)
+    ld [hli], a
+    ld a, [hl]       ; Preserve the original attributes (flip flags, etc.)
+    ld [hli], a
+    
+    ; Set timer for how long to display the attack sprite
+    ; 30 frames ≈ 0.5 seconds at 60fps
+    ld a, 60
+    ld [wSpriteChangeTimer2], a
+    ret
+
+; Switch back to default tile (0)
+SetDefaultSprite2:
+    xor a
+    ld [wOriginalTile2], a        ; Mark that we're using the default tile
+    ld h, d            ; Point to OAM data for the sprite
+    ld l, e
+    ld a, [hl]                   ; Preserve Y position
+    ld [hli], a
+    ld a, [hl]                   ; Preserve X position
+    ld [hli], a
+    xor a                        ; Set tile ID to 0 (default sprite)
+    ld [hli], a
     ret
 
 ; Check if player is on the ground
@@ -241,171 +737,27 @@ IsGrounded:
 
     ret
 
-; Move if an arrow key was pressed
-CheckMovement:
-
-; Check the left button.
-CheckLeft:
-    ld a, [wCurKeys]
-    and a, PADF_LEFT
-    jp z, CheckRight
-Left:
-    ; Set the horizontal flip flag (bit 5) in the sprite attributes
-    ld a, [wShadowOAM + 3]
-    or a, %00100000  ; Set horizontal flip bit (bit 5)
-    ld [wShadowOAM + 3], a
-
-    ; Check the player speed
-    ld a, [wSpeedCounter]
-    inc a
-    ld [wSpeedCounter], a
-    cp a, 2
-    jp nz, CheckUp
-    xor a
-    ld [wSpeedCounter], a
-    ; Move the player one pixel to the left.
-    ld a, [wShadowOAM + 1]
-    dec a
-    ; If we've already hit the edge of the playfield, don't move.
-    cp a, 0 + 7
-    jp z, CheckUp
-    ld a, [wShadowOAM + 1]
-    dec a
-    ld [wShadowOAM + 1], a
-    jp CheckUp
-
-; Check the right button.
-CheckRight:
-    ld a, [wCurKeys]
-    and a, PADF_RIGHT
-    jp z, CheckUp
-Right:
-    ; Clear the horizontal flip flag (bit 5) in the sprite attributes
-    ld a, [wShadowOAM + 3]
-    and a, %11011111  ; Clear horizontal flip bit (bit 5)
-    ld [wShadowOAM + 3], a
-
-    ; Check the player speed
-    ld a, [wSpeedCounter]
-    inc a
-    ld [wSpeedCounter], a
-    cp a, 2
-    jp nz, CheckUp
-    xor a
-    ld [wSpeedCounter], a
-    ; Move the player one pixel to the right.
-    ld a, [wShadowOAM + 1]
-    inc a
-    ; If we've already hit the edge of the playfield, don't move.
-    cp a, 161
-    jp z, CheckUp
-    ld a, [wShadowOAM + 1]
-    inc a
-    ld [wShadowOAM + 1], a
-    jp CheckUp
-
-; Check the up button.
-CheckUp:
-    ld a, [wCurKeys]
-    and a, PADF_UP
-    jp z, CheckDown
-Up:
-    ; Jump if on the ground
-    ld a, [wShadowOAM+1]
-    ld b, a
-    ld a, [wShadowOAM]
-    ld c, a
-    call IsGrounded
-    ret nz
-    xor a
-    ld [wPlayerDirection], a
-    ld [wFrameCounter], a
-    ld [wGravityCounter], a
-    ld a, 1
-    ld [wInverseVelocity], a
-    ret
-
-; Check the down button.
-CheckDown:
-    ld a, [wCurKeys]
-    and a, PADF_DOWN
-    ret z
-Down:
-    ; Move down if on the ground
-    ld a, [wShadowOAM+1]
-    ld b, a
-    ld a, [wShadowOAM]
-    ld c, a
-    call IsGrounded
-    ret nz
-    ld a, [wShadowOAM]
-    add a, 2
-    ld [wShadowOAM], a
-    ret
-
-; When A is pressed, toggle between default sprite (tile 0) and attack sprite (tile 2)
-; After half a second, it will automatically switch back
-CheckA:
-    ; First check if the timer is already active
-    ld a, [wSpriteChangeTimer]   ; Check if timer is active
-    cp a, 0
-    jp nz, DecrementAttackTimer        ; If timer is not 0, just decrement it
-    
-    ; Timer is 0, check if A was pressed
-    ld a, [wCurKeys]             ; Load the current keys state
-    and a, PADF_A                ; Check if A button is pressed (S on keyboard)
-    ret z                        ; Return if A is not pressed
-    
-    ; A was pressed and timer is 0, switch to attack sprite
-    jp SetAttackSprite           ; Switch to attack sprite and start the timer
-
-DecrementAttackTimer:
-    ; Timer is active, decrement it regardless of button state
-    ld a, [wSpriteChangeTimer]
-    dec a                        ; Decrement timer
-    ld [wSpriteChangeTimer], a
-    
-    ; If timer reached 0, switch back to default sprite
-    cp a, 0
-    ret nz                       ; Return if timer is not yet 0
-    
-    ; Timer reached 0, switch back to default sprite
-    jp SetDefaultSprite
-    
-; Switch to attack tile (tile 2)
-SetAttackSprite:
-    ld a, 1
-    ld [wOriginalTile], a        ; Mark that we're using the attack tile
-    ld hl, wShadowOAM            ; Point to OAM data for the sprite
-    ld a, [hl]                   ; Preserve Y position
-    ld [hli], a
-    ld a, [hl]                   ; Preserve X position
-    ld [hli], a
-    ld a, 2                      ; Set tile ID to 2 (attack sprite)
-    ld [hli], a
-    ld a, [wShadowOAM + 3]       ; Preserve the original attributes (flip flags, etc.)
-    ld [hli], a
-    
-    ; Set timer for how long to display the attack sprite
-    ; 30 frames ≈ 0.5 seconds at 60fps
-    ld a, 60
-    ld [wSpriteChangeTimer], a
-    ret
-
-; Switch back to default tile (0)
-SetDefaultSprite:
-    xor a
-    ld [wOriginalTile], a        ; Mark that we're using the default tile
-    ld hl, wShadowOAM            ; Point to OAM data for the sprite
-    ld a, [hl]                   ; Preserve Y position
-    ld [hli], a
-    ld a, [hl]                   ; Preserve X position
-    ld [hli], a
-    xor a                        ; Set tile ID to 0 (default sprite)
-    ld [hli], a
-    ret
-
 UpdateKeys:
+    ; Poll half the controller
+    ld a, P1F_GET_BTN
+    call .onenibble
+    ld b, a ; B7-4 = 1; B3-0 = unpressed buttons
+
+    ; Poll the other half
+    ld a, P1F_GET_DPAD
+    call .onenibble
+    swap a ; A7-4 = unpressed directions; A3-0 = 1
+    xor a, b ; A = pressed buttons + directions
+    ld b, a ; B = pressed buttons + directions
+
+    ; Combine with previous wCurKeys to make wNewKeys
+    ld a, [wCurKeys1]
+    xor a, b ; A = keys that changed state
+    and a, b ; A = keys that changed to pressed
+    ld [wNewKeys1], a
+    ld a, b
+    ld [wCurKeys1], a
+
     ; Poll half the controller
     ld a, P1F_GET_BTN
     call .onenibble
@@ -423,14 +775,13 @@ UpdateKeys:
     ldh [rP1], a
 
     ; Combine with previous wCurKeys to make wNewKeys
-    ld a, [wCurKeys]
+    ld a, [wCurKeys2]
     xor a, b ; A = keys that changed state
     and a, b ; A = keys that changed to pressed
-    ld [wNewKeys], a
+    ld [wNewKeys2], a
     ld a, b
-    ld [wCurKeys], a
+    ld [wCurKeys2], a
     ret
-
 .onenibble
     ldh [rP1], a ; switch the key matrix
     call .knownret ; burn 10 cycles calling a known ret
@@ -478,8 +829,10 @@ ContinueCalc:
     sub a, l
     ld h, a
     ; Add the offset to the tilemap's base address, and we are done!
-    ld de, $9800
-    add hl, de
+    push bc
+    ld bc, $9800
+    add hl, bc
+    pop bc
     ret
 
 ; @param a: tile ID
@@ -538,21 +891,34 @@ IsBaseTile:
     cp a, $A9
     ret
 
-UpdateSprite:
-    call CheckA
+UpdateSprite1:
+    call CheckA1
+    ret
+
+UpdateSprite2:
+    call CheckA2
     ret
 
 SECTION "Input Variables", WRAM0
-wCurKeys: db
-wNewKeys: db
 wCurKeys1: db
+wNewKeys1: db
 wCurKeys2: db
+wNewKeys2: db
 
-SECTION "Player Data", WRAM0
-wInverseVelocity: db
-wFrameCounter: db
-wPlayerDirection: db
-wGravityCounter: db
-wSpeedCounter: db
-wSpriteChangeTimer: db  ; Timer for sprite change
-wOriginalTile: db       ; Store the original tile ID
+SECTION "Player 1 Data", WRAM0
+wInverseVelocity1: db
+wFrameCounter1: db
+wPlayerDirection1: db
+wGravityCounter1: db
+wSpeedCounter1: db
+wSpriteChangeTimer1: db  ; Timer for sprite change
+wOriginalTile1: db       ; Store the original tile ID
+
+SECTION "Player 2 Data", WRAM0
+wInverseVelocity2: db
+wFrameCounter2: db
+wPlayerDirection2: db
+wGravityCounter2: db
+wSpeedCounter2: db
+wSpriteChangeTimer2: db  ; Timer for sprite change
+wOriginalTile2: db       ; Store the original tile ID

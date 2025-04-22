@@ -1,5 +1,7 @@
 SECTION "SGBUtilsSection", ROM0
 
+; Source: https://gbdev.gg8.se/forums/viewtopic.php?id=225
+
 ;; Point hl to SGB command
 ;; don't interrupt this sequence,
 ;; e.g. by reading keypad
