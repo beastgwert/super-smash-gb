@@ -91,6 +91,12 @@ WaitVBlank:
     ld [wSpriteChangeTimer2], a
     ld [wOriginalTile2], a
     ld [wSpeedCounter2], a
+    ld [wPlayer1HP], a
+    ld [wPlayer2HP], a
+    ld [wPlayer1HPTens], a
+    ld [wPlayer1HPOnes], a
+    ld [wPlayer2HPTens], a
+    ld [wPlayer2HPOnes], a
 
 Main:
     call ResetShadowOAM
@@ -107,6 +113,12 @@ Main:
     call UpdatePlayer2
     call CheckMovement2
     call UpdateSprite2
+
+    ; Test HP functionality - increase HP when certain keys are pressed
+    ; call TestHPFunctionality
+
+    ; Update HP display when needed (in a real game, this would be called when damage is taken)
+    ; call UpdateHPDisplay
 
     ldh a, [rLY]
 	cp 144
@@ -842,27 +854,27 @@ ContinueCalc:
 ; @return z: set if a is a wall.
 IsWallTile:
     ; top platform
-    cp a, $43
+    cp a, $53
     ret z
-    cp a, $44
+    cp a, $54
     ret z
     ; left platform
-    cp a, $6C
+    cp a, $7C
     ret z
-    cp a, $6D
+    cp a, $7D
     ret z
-    cp a, $6E
-    ret z
-    cp a, $6F
+    ; cp a, $7E ; if this section is included, a will always be 7E (stuck inside a wall) <--- FIX
+    ; ret z
+    cp a, $7F
     ret z
     ; right platform
-    cp a, $71
+    cp a, $81
     ret z
-    cp a, $72
+    cp a, $82
     ret z
-    cp a, $73
+    cp a, $83
     ret z
-    cp a, $74
+    cp a, $84
     ret z
     ; base platform
     call IsBaseTile
@@ -871,29 +883,29 @@ IsWallTile:
 ; @param a: tile ID
 ; @return z: set if a is a base.
 IsBaseTile:
-    cp a, $A2
+    cp a, $B2
     ret z
-    cp a, $A3
+    cp a, $B3
     ret z
-    cp a, $A4
+    cp a, $B4
     ret z
-    cp a, $A5
+    cp a, $B5
     ret z
-    cp a, $A6
+    cp a, $B6
     ret z
-    cp a, $A7
+    cp a, $B7
     ret z
-    cp a, $A8
+    cp a, $B8
     ret z
-    cp a, $A9
+    cp a, $B9
     ret z
-    cp a, $AA
+    cp a, $BA
     ret z
-    cp a, $AB
+    cp a, $BB
     ret z
-    cp a, $AC
+    cp a, $BC
     ret z
-    cp a, $AD
+    cp a, $BD
     ret 
 
 UpdateSprite1:
@@ -904,6 +916,151 @@ UpdateSprite2:
     call CheckA2
     ret
 
+; Convert HP value to tens and ones digits
+; @param a: HP value (0-99)
+; @param hl: Address to store tens digit
+; @param de: Address to store ones digit
+ConvertHPToDigits:
+    ; Save HP value
+    ld b, a
+    
+    ; Calculate tens digit by repeatedly subtracting 10
+    ld c, 0
+.divLoop
+    cp 10
+    jr c, .divDone
+    sub 10
+    inc c
+    jr .divLoop
+.divDone
+    ; c now contains tens digit, a contains ones digit
+    ld [hl], c
+    ld [de], a
+    ret
+
+; Update HP display for both players
+UpdateHPDisplay::
+    ; Convert Player 1 HP to digits
+    ld a, [wPlayer1HP]
+    ld hl, wPlayer1HPTens
+    ld de, wPlayer1HPOnes
+    call ConvertHPToDigits
+    
+    ; Convert Player 2 HP to digits
+    ld a, [wPlayer2HP]
+    ld hl, wPlayer2HPTens
+    ld de, wPlayer2HPOnes
+    call ConvertHPToDigits
+    
+    ; Find the next available OAM slots for HP digits (after the player sprites)
+    ld hl, wShadowOAM + 8  ; Player 1 uses slots 0-3, Player 2 uses slots 4-7
+    
+    ; Display Player 1 HP (tens digit)
+    ; Y position
+    ld a, 16 + 137
+    ld [hli], a
+    ; X position
+    ld a, 8 + 48
+    ld [hli], a
+    ; Tile number (0 = tile 20, 1 = tile 22, etc.)
+    ld a, [wPlayer1HPTens]
+    add a, a       ; Multiply by 2
+    add a, 20      ; Add base tile number
+    ld [hli], a
+    ; Attributes (palette, flip, etc.)
+    xor a
+    ld [hli], a
+    
+    ; Display Player 1 HP (ones digit)
+    ; Y position
+    ld a, 16 + 137
+    ld [hli], a
+    ; X position
+    ld a, 8 + 56       ; 8 pixels to the right of tens digit
+    ld [hli], a
+    ; Tile number
+    ld a, [wPlayer1HPOnes]
+    add a, a       ; Multiply by 2
+    add a, 20      ; Add base tile number
+    ld [hli], a
+    ; Attributes
+    xor a
+    ld [hli], a
+    
+    ; Display Player 2 HP (tens digit)
+    ; Y position
+    ld a, 16 + 137
+    ld [hli], a
+    ; X position
+    ld a, 8 + 112
+    ld [hli], a
+    ; Tile number
+    ld a, [wPlayer2HPTens]
+    add a, a       ; Multiply by 2
+    add a, 20      ; Add base tile number
+    ld [hli], a
+    ; Attributes
+    xor a
+    ld [hli], a
+    
+    ; Display Player 2 HP (ones digit)
+    ; Y position
+    ld a, 16 + 137
+    ld [hli], a
+    ; X position
+    ld a, 8 + 120      ; 8 pixels to the right of tens digit
+    ld [hli], a
+    ; Tile number
+    ld a, [wPlayer2HPOnes]
+    add a, a       ; Multiply by 2
+    add a, 20      ; Add base tile number
+    ld [hli], a
+    ; Attributes
+    xor a
+    ld [hli], a
+    
+    ret
+
+; Example function to increase Player 1 HP (for testing)
+IncreasePlayer1HP::
+    ld a, [wPlayer1HP]
+    cp 99      ; Check if already at max
+    ret z      ; Return if at max
+    inc a      ; Increase HP
+    ld [wPlayer1HP], a
+    ret
+
+; Example function to increase Player 2 HP (for testing)
+IncreasePlayer2HP::
+    ld a, [wPlayer2HP]
+    cp 99      ; Check if already at max
+    ret z      ; Return if at max
+    inc a      ; Increase HP
+    ld [wPlayer2HP], a
+    ret
+
+; Test HP functionality - increase HP when certain keys are pressed
+TestHPFunctionality:
+    ; Check if Select key is pressed for Player 1
+    ld a, [wNewKeys1]
+    and PADF_SELECT
+    jr z, .checkPlayer2
+    
+    ; Increase Player 1 HP
+    call IncreasePlayer1HP
+    
+.checkPlayer2:
+    ; Check if Select key is pressed for Player 2
+    ld a, [wNewKeys2]
+    and PADF_SELECT
+    jr z, .done
+    
+    ; Increase Player 2 HP
+    call IncreasePlayer2HP
+    
+.done:
+    ret
+
 SECTION "Input Variables", WRAM0
 wCurKeys1: db
 wNewKeys1: db
@@ -911,19 +1068,27 @@ wCurKeys2: db
 wNewKeys2: db
 
 SECTION "Player 1 Data", WRAM0
-wInverseVelocity1: db
-wFrameCounter1: db
 wPlayerDirection1: db
+wFrameCounter1: db
+wInverseVelocity1: db
 wGravityCounter1: db
 wSpeedCounter1: db
 wSpriteChangeTimer1: db  ; Timer for sprite change
 wOriginalTile1: db       ; Store the original tile ID
 
 SECTION "Player 2 Data", WRAM0
-wInverseVelocity2: db
-wFrameCounter2: db
 wPlayerDirection2: db
+wFrameCounter2: db
+wInverseVelocity2: db
 wGravityCounter2: db
 wSpeedCounter2: db
 wSpriteChangeTimer2: db  ; Timer for sprite change
 wOriginalTile2: db       ; Store the original tile ID
+
+SECTION "HP Data", WRAM0
+wPlayer1HP:: db
+wPlayer2HP:: db
+wPlayer1HPTens:: db
+wPlayer1HPOnes:: db
+wPlayer2HPTens:: db
+wPlayer2HPOnes:: db
