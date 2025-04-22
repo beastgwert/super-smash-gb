@@ -37,7 +37,7 @@ CSSClearOam:
     ld [hli], a
     dec b
     jp nz, CSSClearOam
-
+    
     call CSSSetCharacterSelectionOAM
 
 	; Turn the LCD on
@@ -68,35 +68,36 @@ CSSWaitVBlank2:
 	ldh a, [rLY]
 	cp 144
 	jp c, CSSWaitVBlank2
-    call CSSUpdateKeys
-    call CSSUpdateCSSSelectionState
+    call CSSUpdateSelectionState1
+    call CSSUpdateSelectionState2
+    call CSSSetCharacterSelectionOAM
     call CSSUpdateGameState
     call CSSCheckFinish
     jp CSSMain
 
-CSSUpdateCSSSelectionState:
+CSSUpdateSelectionState1:
     .CheckRight
-        ld a, [CSSNewKeys]
+        ld a, [CSSNewKeys1]
         and a, PADF_RIGHT
         jp z, .CheckLeft
     .Right
-        ld a, [CSSselectionState]
+        ld a, [CSSselectionState1]
         add a, 4
-        ld [CSSselectionState], a
+        ld [CSSselectionState1], a
         jp .Return
     .CheckLeft
-        ld a, [CSSNewKeys]
+        ld a, [CSSNewKeys1]
         and a, PADF_LEFT
         jp z, .Return
     .Left
-        ld a, [CSSselectionState]
+        ld a, [CSSselectionState1]
         sub a, 4
-        ld [CSSselectionState], a
+        ld [CSSselectionState1], a
         jp .Return
     .Return
-        ; Take the mod of CSSselectionState and return
-        ; We do CSSselectionState % 24
-        ld a, [CSSselectionState]
+        ; Take the mod of CSSselectionState1 and return
+        ; We do CSSselectionState1 % 24
+        ld a, [CSSselectionState1]
         cp 24
         jp nz, .no_overflow
         ld a, 0
@@ -105,17 +106,57 @@ CSSUpdateCSSSelectionState:
         jp nz, .no_underflow
         ld a, 20
         .no_underflow
-        ld [CSSselectionState], a
-        call CSSSetCharacterSelectionOAM
+        ld [CSSselectionState1], a
+        ret
+
+CSSUpdateSelectionState2:
+    .CheckRight
+        ld a, [CSSNewKeys2]
+        and a, PADF_RIGHT
+        jp z, .CheckLeft
+    .Right
+        ld a, [CSSselectionState2]
+        add a, 4
+        ld [CSSselectionState2], a
+        jp .Return
+    .CheckLeft
+        ld a, [CSSNewKeys2]
+        and a, PADF_LEFT
+        jp z, .Return
+    .Left
+        ld a, [CSSselectionState2]
+        sub a, 4
+        ld [CSSselectionState2], a
+        jp .Return
+    .Return
+        ; Take the mod of CSSselectionState2 and return
+        ; We do CSSselectionState2 % 24
+        ld a, [CSSselectionState2]
+        cp 24
+        jp nz, .no_overflow
+        ld a, 0
+        .no_overflow
+        cp -4
+        jp nz, .no_underflow
+        ld a, 20
+        .no_underflow
+        ld [CSSselectionState2], a
         ret
 
 
-
-
-
 CSSSetCharacterSelectionOAM: 
-    ld a, [CSSselectionState]
-    ld b, a
+    ; Check which player's turn it is
+    ld a, [CSSselectingPlayer]
+    cp 0
+    jr z, .use_first_player
+        ld a, [CSSselectionState2]
+        ld b, a
+        jr .finish_selection
+    .use_first_player
+        ld a, [CSSselectionState1]
+        ld b, a
+    .finish_selection
+
     ; Load michael's normal sprite data
     ld hl, _OAMRAM
     ld a, 64 + 16
@@ -248,13 +289,22 @@ CSSUpdateKeys:
     ld a, P1F_GET_NONE
     ldh [rP1], a
 
-    ; Combine with previous CSSCurKeys to make CSSNewKeys
-    ld a, [CSSCurKeys]
+    ; Combine with previous CSSCurKeys1 to make CSSNewKeys1
+    ld a, [CSSCurKeys1]
     xor a, b ; A = keys that changed state
     and a, b ; A = keys that changed to pressed
-    ld [CSSNewKeys], a
+    ld [CSSNewKeys1], a
     ld a, b
-    ld [CSSCurKeys], a
+    ld [CSSCurKeys1], a
+    
+    di
+    call transferControls
+    ld [CSSCurKeys2], a
+    call transferControls
+    ld [CSSNewKeys2], a
+    ei
+
+
     ret
 
 .onenibble
@@ -269,10 +319,14 @@ CSSUpdateKeys:
 
 CSSInitializeData: 
     xor a
-    ld [CSSCurKeys], a
-    ld [CSSNewKeys], a
-    ld [CSSselectionState], a
+    ld [CSSCurKeys1], a
+    ld [CSSNewKeys1], a
+    ld [CSSCurKeys2], a
+    ld [CSSNewKeys2], a
+    ld [CSSselectionState1], a
+    ld [CSSselectionState2], a
     ld [CSSFrameCounter], a
+    ld [CSSselectingPlayer], a
     ret
 
 CSSUpdateGameState: 
@@ -294,19 +348,38 @@ CSSBouncingAnimation:
     ret
 
 CSSCheckFinish: 
-    ld a, [CSSNewKeys]
-    and a, PADF_A
-    jp z, .Return
-    jp WaitVBlank
-    .Return
-    ret
+    ld a, [CSSselectingPlayer]
+    cp 0
+    jr z, .check_first_player_finish
+        ld a, [CSSNewKeys2]
+        and a, PADF_A
+        jr z, .return_second_player
+        ; Jump to game
+        jp WaitVBlank
+        .return_second_player
+        ret
+    .check_first_player_finish
+        ld a, [CSSNewKeys1]
+        and a, PADF_A
+        jp z, .return_first_player
+        ; Set selecting player to 1
+        ld a, 1
+        ld [CSSselectingPlayer], a
+        xor a
+        ld [CSSselectionState2], a
+        .return_first_player
+        ret
 
 SECTION "CSS Input Variables", WRAM0
-CSSCurKeys: db
-CSSNewKeys: db
+CSSCurKeys1: db
+CSSNewKeys1: db
+CSSCurKeys2: db
+CSSNewKeys2: db
 
 SECTION "CSS Selection State", WRAM0
-CSSselectionState: db
+CSSselectionState1: db
+CSSselectionState2: db
+CSSselectingPlayer: db
 
 SECTION "CSS Game State", WRAM0
 CSSFrameCounter: db

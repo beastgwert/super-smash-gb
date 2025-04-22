@@ -51,7 +51,7 @@ WaitVBlank:
     ld [hli], a
     ld a, 80 + 8
     ld [hli], a
-    ld a, [CSSselectionState]
+    ld a, [CSSselectionState1]
     ld [hli], a
     xor a
     ld [hli], a
@@ -60,7 +60,7 @@ WaitVBlank:
     ld [hli], a
     ld a, 48 + 8
     ld [hli], a
-    ld a, [CSSselectionState]
+    ld a, [CSSselectionState2]
     ld [hli], a
     xor a
     ld [hli], a
@@ -410,7 +410,7 @@ SetAttackSprite1:
     ld [hli], a
     ld a, [hl]                   ; Preserve X position
     ld [hli], a
-    ld a, [CSSselectionState]
+    ld a, [CSSselectionState1]
     add a, 2                      ; Set tile ID to 2 (attack sprite)
     ld [hli], a
     ld a, [hl]       ; Preserve the original attributes (flip flags, etc.)
@@ -432,7 +432,7 @@ SetDefaultSprite1:
     ld [hli], a
     ld a, [hl]                   ; Preserve X position
     ld [hli], a
-    ld a, [CSSselectionState]                        ; Set tile ID to 0 (default sprite)
+    ld a, [CSSselectionState1]                        ; Set tile ID to 0 (default sprite)
     ld [hli], a
     ret
 
@@ -713,7 +713,7 @@ SetAttackSprite2:
     ld [hli], a
     ld a, [hl]                   ; Preserve X position
     ld [hli], a
-    ld a, [CSSselectionState]    ; Set tile ID to 2 (attack sprite)
+    ld a, [CSSselectionState2]    ; Set tile ID to 2 (attack sprite)
     add a, 2
     ld [hli], a
     ld a, [hl]       ; Preserve the original attributes (flip flags, etc.)
@@ -735,7 +735,7 @@ SetDefaultSprite2:
     ld [hli], a
     ld a, [hl]                   ; Preserve X position
     ld [hli], a
-    ld a, [CSSselectionState]                        ; Set tile ID to 0 (default sprite)
+    ld a, [CSSselectionState2]                        ; Set tile ID to 0 (default sprite)
     ld [hli], a
     xor a
     ret
