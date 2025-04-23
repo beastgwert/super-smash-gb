@@ -44,7 +44,7 @@ WaitVBlank:
     jr nz, .resetOAM
 
     ; Initialize the player in OAM
-    ld hl, wShadowOAM
+    ld hl, wShadowOAM + 56
     ld a, 56 + 16
     ld [hli], a
     ld a, 112 + 8
@@ -120,12 +120,12 @@ Main:
     ; Check the current keys every frame.
     call UpdateKeys
 
-    ld de, wShadowOAM
+    ld de, wShadowOAM+56
     call UpdatePlayer1
     call CheckMovement1
     call UpdateSprite1
 
-    ld de, wShadowOAM+4
+    ld de, wShadowOAM+60
     call UpdatePlayer2
     call CheckMovement2
     call UpdateSprite2
@@ -635,7 +635,7 @@ SetDefaultSprite1:
 ; @return c (flag): set if player is hit
 HitsPlayer1:
     ; check right X >= pixel X
-    ld a, [wShadowOAM+1]
+    ld a, [wShadowOAM+56+1]
     cp a, b
     ccf
     ret nc
@@ -644,7 +644,7 @@ HitsPlayer1:
     cp a, b
     ret nc
     ; check bottom Y >= pixel Y
-    ld a, [wShadowOAM]
+    ld a, [wShadowOAM+56]
     cp a, c
     ccf
     ret nc
@@ -1193,7 +1193,7 @@ SetDefaultSprite2:
 ; @return c (flag): set if player is hit
 HitsPlayer2:
     ; check right X >= pixel X
-    ld a, [wShadowOAM+5]
+    ld a, [wShadowOAM+56+5]
     cp a, b
     ccf
     ret nc
@@ -1202,7 +1202,7 @@ HitsPlayer2:
     cp a, b
     ret nc
     ; check bottom Y >= pixel Y
-    ld a, [wShadowOAM+4]
+    ld a, [wShadowOAM+56+4]
     cp a, c
     ccf
     ret nc
@@ -1489,7 +1489,7 @@ UpdateSprite2:
 
 UpdatePlayerIndicators:
     ; Player 1 indicator (at wShadowOAM + 48)
-    ld hl, wShadowOAM      ; Player 1's OAM data
+    ld hl, wShadowOAM+56      ; Player 1's OAM data
     ld a, [hli]            ; Get player 1's Y position
     sub a, 8               ; Position indicator 8 pixels above player
     ld b, a                ; Store Y position in B
@@ -1521,7 +1521,7 @@ UpdatePlayerIndicators:
     ld [hli], a
     
     ; Player 2 indicator (at wShadowOAM + 52)
-    ld hl, wShadowOAM + 4  ; Player 2's OAM data
+    ld hl, wShadowOAM + 60  ; Player 2's OAM data
     ld a, [hli]            ; Get player 2's Y position
     sub a, 8               ; Position indicator 8 pixels above player
     ld b, a                ; Store Y position in B
