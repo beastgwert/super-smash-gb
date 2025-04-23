@@ -133,6 +133,7 @@ Main:
     call UpdateSprite2
 
     call UpdateHPDisplay
+    call UpdateLivesDisplay
 
     ldh a, [rLY]
 	cp 144
@@ -1539,6 +1540,117 @@ UpdateHPDisplay::
     xor a
     ld [hli], a
     
+    ret
+
+; Update lives display for both players
+UpdateLivesDisplay::
+    ; Find the next available OAM slots for lives hearts (after the HP digits)
+    ld hl, wShadowOAM + 24  ; Player 1 uses slots 0-3, Player 2 uses slots 4-7, HP uses 8-15, Lives use 16-23
+
+    ; Display Player 1 lives (always 3 heart positions)
+    ld a, [wPlayerLives1]
+    ld b, a        ; Store lives count in b
+    ld c, 0        ; Initialize counter
+
+    ; Starting position for Player 1 hearts
+    ld de, 14 + 8   ; Starting X coordinate for Player 1 hearts
+
+.displayP1Hearts
+    ; Check if we've displayed all 3 heart positions
+    ld a, c
+    cp 3
+    jr z, .displayP2Lives  ; If we've displayed all 3 hearts, move to Player 2
+
+    ; Y position
+    ld a, 136 + 16
+    ld [hli], a
+    
+    ; X position
+    ld a, e
+    ld [hli], a
+    
+    ; Add 8 pixels for next heart's X position
+    ld a, e
+    add a, 8
+    ld e, a
+    
+    ; Determine tile number (heart tile is 40, blank tile is 57)
+    ld a, c        ; Get current counter
+    cp b           ; Compare with lives count
+    jr nc, .blankTileP1  ; If counter >= lives, use blank tile
+    
+    ; Use heart tile
+    ld a, 40
+    jr .setTileP1
+    
+.blankTileP1
+    ; Use blank tile
+    ld a, 57
+    
+.setTileP1
+    ld [hli], a
+    
+    ; Attributes (palette, flip, etc.)
+    xor a
+    ld [hli], a
+    
+    ; Increment counter and continue
+    inc c
+    jr .displayP1Hearts
+
+.displayP2Lives
+    ; Display Player 2 lives (always 3 heart positions)
+    ld a, [wPlayerLives2]
+    ld b, a        ; Store lives count in b
+    ld c, 0        ; Reset counter
+
+    ; Starting position for Player 2 hearts
+    ld de, 8 + 78 ; Starting X coordinate for Player 2 hearts
+
+.displayP2Hearts
+    ; Check if we've displayed all 3 heart positions
+    ld a, c
+    cp 3
+    jr z, .done    ; If we've displayed all 3 hearts, we're done
+
+    ; Y position
+    ld a, 136 + 16
+    ld [hli], a
+    
+    ; X position
+    ld a, e
+    ld [hli], a
+    
+    ; Add 8 pixels for next heart's X position
+    ld a, e
+    add a, 8
+    ld e, a
+    
+    ; Determine tile number (heart tile is 40, blank tile is 57)
+    ld a, c        ; Get current counter
+    cp b           ; Compare with lives count
+    jr nc, .blankTileP2  ; If counter >= lives, use blank tile
+    
+    ; Use heart tile
+    ld a, 40
+    jr .setTileP2
+    
+.blankTileP2
+    ; Use blank tile
+    ld a, 57
+    
+.setTileP2
+    ld [hli], a
+    
+    ; Attributes (palette, flip, etc.)
+    xor a
+    ld [hli], a
+    
+    ; Increment counter and continue
+    inc c
+    jr .displayP2Hearts
+
+.done
     ret
 
 ; Example function to increase Player 1 HP (for testing)

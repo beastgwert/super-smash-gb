@@ -34,6 +34,9 @@ calebTileDataEnd:
 calebAttackTileData: INCBIN "generated/caleb-attack.2bpp"
 calebAttackTileDataEnd:
 
+heartTileData: INCBIN "generated/heart.2bpp"
+heartTileDataEnd:
+
 InitializeCharacters::
     
     ; Load michael regular sprite data
@@ -85,6 +88,11 @@ InitializeCharacters::
     ld de, calebAttackTileData
     ld hl, CHARACTER_TILES_START + 16 * 10
     ld bc, calebAttackTileDataEnd - calebAttackTileData
+    call Memcopy
+
+    ld de, heartTileData
+    ld hl, HEART_TILES_START
+    ld bc, heartTileDataEnd - heartTileData
     call Memcopy
     
     ret
