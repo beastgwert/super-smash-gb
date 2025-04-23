@@ -34,7 +34,15 @@ calebTileDataEnd:
 calebAttackTileData: INCBIN "generated/caleb-attack.2bpp"
 calebAttackTileDataEnd:
 
-heartTileData: INCBIN "generated/heart.2bpp"
+heartTileData:
+    dw `00000000
+    dw `03303300
+    dw `32232230
+    dw `32222230
+    dw `32222230
+    dw `03222300
+    dw `00323000
+    dw `00030000
 heartTileDataEnd:
 
 InitializeCharacters::
