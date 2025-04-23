@@ -371,13 +371,25 @@ CheckLeft1:
     and a, PADF_LEFT
     jp z, CheckRight1
 Left1:
-    ; Set the horizontal flip flag (bit 5) in the sprite attributes
+    ; Check if already facing left
     ld hl, 3
     add hl, de
     ld a, [hl]
+    bit 5, a  ; Check if horizontal flip bit is already set
+    jr nz, .alreadyFacingLeft
+    
+    ; If not already facing left, set the horizontal flip flag and adjust position
     or a, %00100000  ; Set horizontal flip bit (bit 5)
     ld [hl], a
-
+    
+    ; Adjust X position to account for sprite flip (move 4 pixels left)
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    sub a, 4  ; Subtract 4 from X position
+    ld [hl], a
+    
+.alreadyFacingLeft:
     ; Check the player speed
     ld a, [wSpeedCounter1]
     inc a
@@ -407,13 +419,25 @@ CheckRight1:
     and a, PADF_RIGHT
     jp z, CheckUp1
 Right1:
-    ; Clear the horizontal flip flag (bit 5) in the sprite attributes
+    ; Check if already facing right
     ld hl, 3
     add hl, de
     ld a, [hl]
+    bit 5, a  ; Check if horizontal flip bit is set
+    jr z, .alreadyFacingRight
+    
+    ; If not already facing right, clear the horizontal flip flag and adjust position
     and a, %11011111  ; Clear horizontal flip bit (bit 5)
     ld [hl], a
-
+    
+    ; Adjust X position to account for sprite flip (move 4 pixels right)
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    add a, 4  ; Add 4 to X position
+    ld [hl], a
+    
+.alreadyFacingRight:
     ; Check the player speed
     ld a, [wSpeedCounter1]
     inc a
@@ -901,13 +925,25 @@ CheckLeft2:
     and a, PADF_LEFT
     jp z, CheckRight2
 Left2:
-    ; Set the horizontal flip flag (bit 5) in the sprite attributes
+    ; Check if already facing left
     ld hl, 3
     add hl, de
     ld a, [hl]
+    bit 5, a  ; Check if horizontal flip bit is already set
+    jr nz, .alreadyFacingLeft
+    
+    ; If not already facing left, set the horizontal flip flag and adjust position
     or a, %00100000  ; Set horizontal flip bit (bit 5)
     ld [hl], a
-
+    
+    ; Adjust X position to account for sprite flip (move 4 pixels left)
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    sub a, 4  ; Subtract 4 from X position
+    ld [hl], a
+    
+.alreadyFacingLeft:
     ; Check the player speed
     ld a, [wSpeedCounter2]
     inc a
@@ -937,13 +973,25 @@ CheckRight2:
     and a, PADF_RIGHT
     jp z, CheckUp2
 Right2:
-    ; Clear the horizontal flip flag (bit 5) in the sprite attributes
+    ; Check if already facing right
     ld hl, 3
     add hl, de
     ld a, [hl]
+    bit 5, a  ; Check if horizontal flip bit is set
+    jr z, .alreadyFacingRight
+    
+    ; If not already facing right, clear the horizontal flip flag and adjust position
     and a, %11011111  ; Clear horizontal flip bit (bit 5)
     ld [hl], a
-
+    
+    ; Adjust X position to account for sprite flip (move 4 pixels right)
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    add a, 4  ; Add 4 to X position
+    ld [hl], a
+    
+.alreadyFacingRight:
     ; Check the player speed
     ld a, [wSpeedCounter2]
     inc a
@@ -1564,7 +1612,7 @@ UpdateLivesDisplay::
     ; Reset the position in OAM for the hearts
     ld hl, wShadowOAM + 32
     
-    ; Find the next available OAM slots for lives hearts (after the HP digits)
+    ; Find the next available OAM slots for lives hearts (after the player sprites)
     ld hl, wShadowOAM + 24  ; Player 1 uses slots 0-3, Player 2 uses slots 4-7, HP uses 8-15, Lives use 16-23
 
     ; Display Player 1 lives (always 3 heart positions)
