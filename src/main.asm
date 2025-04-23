@@ -13,9 +13,7 @@ SECTION "Header", ROM0[$100]
 	ds $150 - @, 0 ; Make room for the header
 
 EntryPoint:
-	; Shut down audio circuitry
-	xor a
-	ld [rNR52], a
+    call InitSound
 
 	; Do not turn the LCD off outside of VBlank
 WaitVBlank:
@@ -553,6 +551,8 @@ NoOverflow1:
     ld a, 1
     ld [wInverseVelocity2], a
 
+    call PlayerHitSound
+
     ; A was pressed and timer is 0, switch to attack sprite
     jp SetAttackSprite1           ; Switch to attack sprite and start the timer
 
@@ -1083,6 +1083,8 @@ NoOverflow2:
     ld [wGravityCounter1], a
     ld a, 1
     ld [wInverseVelocity1], a
+
+    call PlayerHitSound
 
     ; A was pressed and timer is 0, switch to attack sprite
     jp SetAttackSprite2           ; Switch to attack sprite and start the timer
@@ -1653,44 +1655,60 @@ UpdateLivesDisplay::
 .done
     ret
 
-; Example function to increase Player 1 HP (for testing)
-IncreasePlayer1HP::
-    ld a, [wPlayer1HP]
-    cp 99      ; Check if already at max
-    ret z      ; Return if at max
-    inc a      ; Increase HP
-    ld [wPlayer1HP], a
+; Initialize sound
+InitSound:
+    ; Turn on sound
+    ld a, %10000000
+    ld [$FF26], a    ; Sound on/off register
+    
+    ; Set volume
+    ld a, %01110111
+    ld [$FF24], a    ; Channel control / volume
+    
+    ; Sound panning
+    ld a, %11111111
+    ld [$FF25], a    ; Sound output terminal
     ret
 
-; Example function to increase Player 2 HP (for testing)
-IncreasePlayer2HP::
-    ld a, [wPlayer2HP]
-    cp 99      ; Check if already at max
-    ret z      ; Return if at max
-    inc a      ; Increase HP
-    ld [wPlayer2HP], a
-    ret
-
-; Test HP functionality - increase HP when certain keys are pressed
-TestHPFunctionality:
-    ; Check if Select key is pressed for Player 1
-    ld a, [wNewKeys1]
-    and PADF_SELECT
-    jr z, .checkPlayer2
+PlayerHitSound:
+    ; Use noise channel (Channel 4) for the hit sound
+    ; Set sound length
+    ld a, %00111111  ; Fairly short sound
+    ld [$FF20], a
     
-    ; Increase Player 1 HP
-    call IncreasePlayer1HP
+    ; Volume envelope (start high, quick decay)
+    ld a, %11110010  ; Start at volume 15, decrease at step 2 (faster decay)
+    ld [$FF21], a
     
-.checkPlayer2:
-    ; Check if Select key is pressed for Player 2
-    ld a, [wNewKeys2]
-    and PADF_SELECT
-    jr z, .done
+    ; Set noise parameters - lower bits = higher frequency
+    ld a, %01110100  ; Medium-high frequency noise with some randomness
+    ld [$FF22], a
     
-    ; Increase Player 2 HP
-    call IncreasePlayer2HP
+    ; Trigger sound
+    ld a, %10000000  ; Trigger bit
+    ld [$FF23], a
     
-.done:
+    ; Also add a quick sound on Channel 1 for more impact
+    ; No sweep
+    ld a, %00000000
+    ld [$FF10], a
+    
+    ; Set duty and length
+    ld a, %00111000  ; 75% duty cycle (harsher sound), short length
+    ld [$FF11], a
+    
+    ; Set envelope
+    ld a, %11110001  ; Start at volume 15, fast decrease
+    ld [$FF12], a
+    
+    ; Set frequency (lower)
+    ld a, %00001000
+    ld [$FF13], a
+    
+    ; Trigger and set upper freq bits
+    ld a, %11000110  ; Trigger + don't loop + freq bits
+    ld [$FF14], a
+    
     ret
 
 SECTION "Input Variables", WRAM0

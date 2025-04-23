@@ -10,9 +10,6 @@ INCLUDE "character-selection-background.asm"
 ; 	ds $150 - @, 0 ; Make room for the header
 
 CSSEntryPoint:
-	; Shut down audio circuitry
-	xor a
-	ld [rNR52], a
 
 	; Do not turn the LCD off outside of VBlank
 CSSWaitVBlank:
