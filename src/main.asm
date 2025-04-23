@@ -635,7 +635,7 @@ SetDefaultSprite1:
 ; @return c (flag): set if player is hit
 HitsPlayer1:
     ; check right X >= pixel X
-    ld a, [wShadowOAM+56+1]
+    ld a, [wShadowOAM+57]
     cp a, b
     ccf
     ret nc
@@ -1193,7 +1193,7 @@ SetDefaultSprite2:
 ; @return c (flag): set if player is hit
 HitsPlayer2:
     ; check right X >= pixel X
-    ld a, [wShadowOAM+56+5]
+    ld a, [wShadowOAM+61]
     cp a, b
     ccf
     ret nc
@@ -1202,7 +1202,7 @@ HitsPlayer2:
     cp a, b
     ret nc
     ; check bottom Y >= pixel Y
-    ld a, [wShadowOAM+56+4]
+    ld a, [wShadowOAM+60]
     cp a, c
     ccf
     ret nc
