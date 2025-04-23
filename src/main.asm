@@ -112,6 +112,10 @@ WaitVBlank:
     ld a, 3
     ld [wPlayerLives1], a
     ld [wPlayerLives2], a
+
+    call SetPlayer1Stats
+    call SetPlayer2Stats
+
 Main:
     call ResetShadowOAM
 
@@ -142,6 +146,68 @@ WaitVBlank2:
     call hOAMDMA
 
     jp Main
+
+; Set player stats
+SetPlayer1Stats:
+    ld a, [CSSselectionState1]
+    cp a, 0
+    jp z, Krill1
+    cp a, 4
+    jp z, Omkar1
+    cp a, 8
+    jp z, Caleb1
+    cp a, 12
+    jp z, Michael1
+Neil1:
+    ld a, 10
+    ld [wPlayer1AttackMin], a
+    ld a, 4
+    ld [wPlayer1AttackRange], a
+    ld a, 2
+    ld [wPlayer1Defense], a
+    ld a, 1
+    ld [wPlayer1Speed], a
+    ret
+Krill1:
+    ld a, 30
+    ld [wPlayer1AttackMin], a
+    ld a, 32
+    ld [wPlayer1AttackRange], a
+    ld a, 0
+    ld [wPlayer1Defense], a
+    ld a, 5
+    ld [wPlayer1Speed], a
+    ret
+Omkar1:
+    ld a, 20
+    ld [wPlayer1AttackMin], a
+    ld a, 8
+    ld [wPlayer1AttackRange], a
+    ld a, 1
+    ld [wPlayer1Defense], a
+    ld a, 2
+    ld [wPlayer1Speed], a
+    ret
+Caleb1:
+    ld a, 6
+    ld [wPlayer1AttackMin], a
+    ld a, 4
+    ld [wPlayer1AttackRange], a
+    ld a, 6
+    ld [wPlayer1Defense], a
+    ld a, 4
+    ld [wPlayer1Speed], a
+    ret
+Michael1:
+    ld a, 14
+    ld [wPlayer1AttackMin], a
+    ld a, 4
+    ld [wPlayer1AttackRange], a
+    ld a, 3
+    ld [wPlayer1Defense], a
+    ld a, 3
+    ld [wPlayer1Speed], a
+    ret
 
 ; Update the player's position based on their velocity
 ; @param de address in OAM
@@ -314,7 +380,9 @@ Left1:
     ld a, [wSpeedCounter1]
     inc a
     ld [wSpeedCounter1], a
-    cp a, 2
+    ld b, a
+    ld a, [wPlayer1Speed]
+    cp a, b
     jp nz, CheckUp1
     xor a
     ld [wSpeedCounter1], a
@@ -348,7 +416,9 @@ Right1:
     ld a, [wSpeedCounter1]
     inc a
     ld [wSpeedCounter1], a
-    cp a, 2
+    ld b, a
+    ld a, [wPlayer1Speed]
+    cp a, b
     jp nz, CheckUp1
     xor a
     ld [wSpeedCounter1], a
@@ -464,8 +534,13 @@ CheckHit1:
     jp nc, SetAttackSprite1
 
     ; Perform attack
+    call CalculatePlayer1Attack
     ld a, [wPlayer2HP]
-    add a, 5
+    add a, b
+    cp a, 100
+    jp c, NoOverflow1
+    ld a, 99
+NoOverflow1:
     ld [wPlayer2HP], a
 
     ; Apply knockback
@@ -555,6 +630,114 @@ HitsPlayer1:
     ld a, h
     sub a, b
     cp a, c
+    ret
+
+; @return b: damage inflicted
+CalculatePlayer1Attack:
+    ; Get random number in range
+    call rand
+    ld a, [wPlayer1AttackRange]
+    dec a
+    ld b, a
+    ld a, c
+    and a, b
+    ld b, a
+    ; Add to min attack
+    ld a, [wPlayer1AttackMin]
+    add a, b
+    ld b, a
+    ld c, a
+    ; Apply defense
+    ld a, [wPlayer2Defense]
+    srl c
+    bit 2, a
+    jp z, NoDef501
+    ; Subtract 1/2
+    ld h, a
+    ld a, b
+    sub a, c
+    ld b, a
+    ld a, h
+NoDef501:
+    srl c
+    bit 1, a
+    jp z, NoDef251
+    ; Subtract 1/4
+    ld h, a
+    ld a, b
+    sub a, c
+    ld b, a
+    ld a, h
+NoDef251:
+    srl c
+    bit 0, a
+    ret z
+    ; Subtract 1/8
+    ld a, b
+    sub a, c
+    ld b, a
+    ret
+
+; Set player stats
+SetPlayer2Stats:
+    ld a, [CSSselectionState2]
+    cp a, 0
+    jp z, Krill2
+    cp a, 4
+    jp z, Omkar2
+    cp a, 8
+    jp z, Caleb2
+    cp a, 12
+    jp z, Michael2
+Neil2:
+    ld a, 10
+    ld [wPlayer2AttackMin], a
+    ld a, 4
+    ld [wPlayer2AttackRange], a
+    ld a, 2
+    ld [wPlayer2Defense], a
+    ld a, 1
+    ld [wPlayer2Speed], a
+    ret
+Krill2:
+    ld a, 30
+    ld [wPlayer2AttackMin], a
+    ld a, 32
+    ld [wPlayer2AttackRange], a
+    ld a, 0
+    ld [wPlayer2Defense], a
+    ld a, 5
+    ld [wPlayer2Speed], a
+    ret
+Omkar2:
+    ld a, 20
+    ld [wPlayer2AttackMin], a
+    ld a, 8
+    ld [wPlayer2AttackRange], a
+    ld a, 1
+    ld [wPlayer2Defense], a
+    ld a, 2
+    ld [wPlayer2Speed], a
+    ret
+Caleb2:
+    ld a, 6
+    ld [wPlayer2AttackMin], a
+    ld a, 4
+    ld [wPlayer2AttackRange], a
+    ld a, 6
+    ld [wPlayer2Defense], a
+    ld a, 4
+    ld [wPlayer2Speed], a
+    ret
+Michael2:
+    ld a, 14
+    ld [wPlayer2AttackMin], a
+    ld a, 4
+    ld [wPlayer2AttackRange], a
+    ld a, 3
+    ld [wPlayer2Defense], a
+    ld a, 3
+    ld [wPlayer2Speed], a
     ret
 
 ; Update the player's position based on their velocity
@@ -728,7 +911,9 @@ Left2:
     ld a, [wSpeedCounter2]
     inc a
     ld [wSpeedCounter2], a
-    cp a, 2
+    ld b, a
+    ld a, [wPlayer2Speed]
+    cp a, b
     jp nz, CheckUp2
     xor a
     ld [wSpeedCounter2], a
@@ -762,7 +947,9 @@ Right2:
     ld a, [wSpeedCounter2]
     inc a
     ld [wSpeedCounter2], a
-    cp a, 2
+    ld b, a
+    ld a, [wPlayer2Speed]
+    cp a, b
     jp nz, CheckUp2
     xor a
     ld [wSpeedCounter2], a
@@ -878,8 +1065,13 @@ CheckHit2:
     jp nc, SetAttackSprite2
 
     ; Perform attack
+    call CalculatePlayer2Attack
     ld a, [wPlayer1HP]
-    add a, 5
+    add a, b
+    cp a, 100
+    jp c, NoOverflow2
+    ld a, 99
+NoOverflow2:
     ld [wPlayer1HP], a
 
     ; Apply knockback
@@ -970,6 +1162,52 @@ HitsPlayer2:
     ld a, h
     sub a, b
     cp a, c
+    ret
+
+; @return b: damage inflicted
+CalculatePlayer2Attack:
+    ; Get random number in range
+    call rand
+    ld a, [wPlayer2AttackRange]
+    dec a
+    ld b, a
+    ld a, c
+    and a, b
+    ld b, a
+    ; Add to min attack
+    ld a, [wPlayer2AttackMin]
+    add a, b
+    ld b, a
+    ld c, a
+    ; Apply defense
+    ld a, [wPlayer1Defense]
+    srl c
+    bit 2, a
+    jp z, NoDef502
+    ; Subtract 1/2
+    ld h, a
+    ld a, b
+    sub a, c
+    ld b, a
+    ld a, h
+NoDef502:
+    srl c
+    bit 1, a
+    jp z, NoDef252
+    ; Subtract 1/4
+    ld h, a
+    ld a, b
+    sub a, c
+    ld b, a
+    ld a, h
+NoDef252:
+    srl c
+    bit 0, a
+    ret z
+    ; Subtract 1/8
+    ld a, b
+    sub a, c
+    ld b, a
     ret
 
 ; Check if player is on the ground
@@ -1362,6 +1600,18 @@ wPlayerLives1: db
 wPlayerStun1: db
 wKBDirection1: db
 
+SECTION "Player 1 Stats", WRAM0
+wPlayer1AttackMin: db
+wPlayer1AttackRange: db
+wPlayer1Defense: db
+wPlayer1Speed: db
+
+SECTION "Player 2 Stats", WRAM0
+wPlayer2AttackMin: db
+wPlayer2AttackRange: db
+wPlayer2Defense: db
+wPlayer2Speed: db
+
 SECTION "Player 2 Data", WRAM0
 wPlayerDirection2: db
 wFrameCounter2: db
@@ -1382,3 +1632,31 @@ wPlayer1HPTens:: db
 wPlayer1HPOnes:: db
 wPlayer2HPTens:: db
 wPlayer2HPOnes:: db
+
+
+SECTION "MathVariables", WRAM0
+randstate:: ds 4
+
+SECTION "Math", ROM0
+
+;; From: https://github.com/pinobatch/libbet/blob/master/src/rand.z80#L34-L54
+; Generates a pseudorandom 16-bit integer in BC
+; using the LCG formula from cc65 rand():
+; x[i + 1] = x[i] * 0x01010101 + 0xB3B3B3B3
+; @return A=B=state bits 31-24 (which have the best entropy),
+; C=state bits 23-16, HL trashed
+rand::
+  ; Add 0xB3 then multiply by 0x01010101
+  ld hl, randstate+0
+  ld a, [hl]
+  add a, $B3
+  ld [hl+], a
+  adc a, [hl]
+  ld [hl+], a
+  adc a, [hl]
+  ld [hl+], a
+  ld c, a
+  adc a, [hl]
+  ld [hl], a
+  ld b, a
+  ret
