@@ -45,6 +45,27 @@ heartTileData:
     dw `00030000
 heartTileDataEnd:
 
+P1TileData:
+    dw `00000000
+    dw `00000000
+    dw `00000000
+    dw `33303000
+    dw `30303000
+    dw `33303000
+    dw `30003000
+    dw `30003000
+P1TileDataEnd:
+
+P2TileData:
+    dw `00000000
+    dw `00000000
+    dw `00000000
+    dw `33303330
+    dw `30300030
+    dw `33303330
+    dw `30003000
+    dw `30003330
+P2TileDataEnd:
 InitializeCharacters::
     
     ; Load michael regular sprite data
@@ -103,4 +124,13 @@ InitializeCharacters::
     ld bc, heartTileDataEnd - heartTileData
     call Memcopy
     
+    ld de, P1TileData
+    ld hl, PLAYER_INDICATOR_START
+    ld bc, P1TileDataEnd - P1TileData
+    call Memcopy
+    
+    ld de, P2TileData
+    ld hl, PLAYER_INDICATOR_START + 16 * 2
+    ld bc, P2TileDataEnd - P2TileData
+    call Memcopy
     ret
