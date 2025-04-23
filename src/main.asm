@@ -1496,6 +1496,20 @@ UpdatePlayerIndicators:
     ld a, [hli]            ; Get player 1's X position
     ld c, a                ; Store X position in C
     
+    ; Check if player 1 is flipped horizontally
+    ld a, [hl]             ; Get player 1's tile number (skip)
+    inc hl
+    ld a, [hl]             ; Get player 1's attributes
+    bit 5, a               ; Check horizontal flip bit
+    jr z, .player1NotFlipped
+    
+    ; If player 1 is flipped, adjust indicator X position
+    ld a, c
+    add a, 4               ; Add 4 to X position to match the player's visual position
+    ld c, a
+    
+.player1NotFlipped:
+    ; Set player 1 indicator position and tile
     ld hl, wShadowOAM + 48 ; Player 1 indicator OAM data
     ld a, b                ; Y position
     ld [hli], a
@@ -1514,6 +1528,24 @@ UpdatePlayerIndicators:
     ld a, [hli]            ; Get player 2's X position
     ld c, a                ; Store X position in C
     
+    ; Check if player 2 is flipped horizontally
+    ld a, [hl]             ; Get player 2's tile number (skip)
+    inc hl
+    ld a, [hl]             ; Get player 2's attributes
+    bit 5, a               ; Check horizontal flip bit
+    jr z, .player2NotFlipped
+    
+    ; If player 2 is flipped, adjust indicator X position
+    ld a, c
+    add a, 4               ; Add 4 to X position to match the player's visual position
+    ld c, a
+    
+.player2NotFlipped:
+    ld a, c
+    sub a, 1               
+    ld c, a
+    
+    ; Set player 2 indicator position and tile
     ld hl, wShadowOAM + 52 ; Player 2 indicator OAM data
     ld a, b                ; Y position
     ld [hli], a
