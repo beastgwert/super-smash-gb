@@ -132,6 +132,7 @@ Main:
     call CheckMovement2
     call UpdateSprite2
 
+    call UpdatePlayerIndicators
     call UpdateHPDisplay
     call UpdateLivesDisplay
 
@@ -491,7 +492,6 @@ Down1:
     ret
 
 ; When A is pressed, toggle between default sprite (tile 0) and attack sprite (tile 2)
-; After half a second, it will automatically switch back
 CheckA1:
     ; First check if the timer is already active
     ld a, [wSpriteChangeTimer1]   ; Check if timer is active
@@ -1437,26 +1437,43 @@ UpdateSprite2:
     call CheckA2
     ret
 
-; Convert HP value to tens and ones digits
-; @param a: HP value (0-99)
-; @param hl: Address to store tens digit
-; @param de: Address to store ones digit
-ConvertHPToDigits:
-    ; Save HP value
-    ld b, a
+UpdatePlayerIndicators:
+    ; Player 1 indicator (at wShadowOAM + 48)
+    ld hl, wShadowOAM      ; Player 1's OAM data
+    ld a, [hli]            ; Get player 1's Y position
+    sub a, 8               ; Position indicator 8 pixels above player
+    ld b, a                ; Store Y position in B
+    ld a, [hli]            ; Get player 1's X position
+    ld c, a                ; Store X position in C
     
-    ; Calculate tens digit by repeatedly subtracting 10
-    ld c, 0
-.divLoop
-    cp 10
-    jr c, .divDone
-    sub 10
-    inc c
-    jr .divLoop
-.divDone
-    ; c now contains tens digit, a contains ones digit
-    ld [hl], c
-    ld [de], a
+    ld hl, wShadowOAM + 48 ; Player 1 indicator OAM data
+    ld a, b                ; Y position
+    ld [hli], a
+    ld a, c                ; X position
+    ld [hli], a
+    ld a, 42               ; Tile number for player 1 indicator
+    ld [hli], a
+    xor a                  ; No attributes (no flip, etc.)
+    ld [hli], a
+    
+    ; Player 2 indicator (at wShadowOAM + 52)
+    ld hl, wShadowOAM + 4  ; Player 2's OAM data
+    ld a, [hli]            ; Get player 2's Y position
+    sub a, 8               ; Position indicator 8 pixels above player
+    ld b, a                ; Store Y position in B
+    ld a, [hli]            ; Get player 2's X position
+    ld c, a                ; Store X position in C
+    
+    ld hl, wShadowOAM + 52 ; Player 2 indicator OAM data
+    ld a, b                ; Y position
+    ld [hli], a
+    ld a, c                ; X position
+    ld [hli], a
+    ld a, 44               ; Tile number for player 2 indicator
+    ld [hli], a
+    xor a                  ; No attributes (no flip, etc.)
+    ld [hl], a
+    
     ret
 
 ; Update HP display for both players
@@ -1544,6 +1561,9 @@ UpdateHPDisplay::
 
 ; Update lives display for both players
 UpdateLivesDisplay::
+    ; Reset the position in OAM for the hearts
+    ld hl, wShadowOAM + 32
+    
     ; Find the next available OAM slots for lives hearts (after the HP digits)
     ld hl, wShadowOAM + 24  ; Player 1 uses slots 0-3, Player 2 uses slots 4-7, HP uses 8-15, Lives use 16-23
 
@@ -1651,6 +1671,28 @@ UpdateLivesDisplay::
     jr .displayP2Hearts
 
 .done
+    ret
+
+; Convert HP value to tens and ones digits
+; @param a: HP value (0-99)
+; @param hl: Address to store tens digit
+; @param de: Address to store ones digit
+ConvertHPToDigits:
+    ; Save HP value
+    ld b, a
+    
+    ; Calculate tens digit by repeatedly subtracting 10
+    ld c, 0
+.divLoop
+    cp 10
+    jr c, .divDone
+    sub 10
+    inc c
+    jr .divLoop
+.divDone
+    ; c now contains tens digit, a contains ones digit
+    ld [hl], c
+    ld [de], a
     ret
 
 ; Example function to increase Player 1 HP (for testing)
