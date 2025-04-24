@@ -68,11 +68,15 @@ CSSWaitVBlank2:
     call CSSUpdateSelectionState1
     call CSSUpdateSelectionState2
     call CSSSetCharacterSelectionOAM
+    call CSSSetCharacerSelectionOverview
     call CSSUpdateGameState
     call CSSCheckFinish
     jp CSSMain
 
 CSSUpdateSelectionState1:
+    ld a, [CSSselectingPlayer]
+    cp 1
+    jr z, .Return
     .CheckRight
         ld a, [CSSNewKeys1]
         and a, PADF_RIGHT
@@ -129,13 +133,13 @@ CSSUpdateSelectionState2:
         ; Take the mod of CSSselectionState2 and return
         ; We do CSSselectionState2 % 24
         ld a, [CSSselectionState2]
-        cp 24
+        cp 20
         jp nz, .no_overflow
         ld a, 0
         .no_overflow
         cp -4
         jp nz, .no_underflow
-        ld a, 20
+        ld a, 16
         .no_underflow
         ld [CSSselectionState2], a
         ret
@@ -324,6 +328,8 @@ CSSInitializeData:
     ld [CSSselectionState2], a
     ld [CSSFrameCounter], a
     ld [CSSselectingPlayer], a
+    ld a, %11011000 ; Different mapping for OBP1
+    ld [rOBP1], a    ; Set Object Palette 1
     ret
 
 CSSUpdateGameState: 
@@ -344,6 +350,19 @@ CSSBouncingAnimation:
     add a, c
     ret
 
+CSSAttackingAnimation: 
+    ld c, a
+    ld a, [CSSFrameCounter]
+    and a, %00100000
+    srl a 
+    srl a
+    srl a
+    srl a
+    cpl
+    add a, c
+    ret
+
+
 CSSCheckFinish: 
     ld a, [CSSselectingPlayer]
     cp 0
@@ -351,6 +370,8 @@ CSSCheckFinish:
         ld a, [CSSNewKeys2]
         and a, PADF_A
         jr z, .return_second_player
+        ; Little fighting animation
+        ; call CSSAttackingAnimation
         ; Jump to game
         jp WaitVBlank
         .return_second_player
@@ -366,6 +387,35 @@ CSSCheckFinish:
         ld [CSSselectionState2], a
         .return_first_player
         ret
+
+
+CSSSetCharacerSelectionOverview: 
+    ld hl, _OAMRAM + 20
+    ld a, 114 + 16
+    ld [hli], a
+    ld a, 101 + 8
+    ld [hli], a
+    ld a, [CSSselectionState1]
+    ld [hli], a
+    xor a
+    ld [hli], a
+
+    ; If selecting player is 1, we display player 2's character
+    ld a, [CSSselectingPlayer]
+    cp 1
+    jr nz, .return
+        ld hl, _OAMRAM + 24
+        ld a, 114 + 16
+        ld [hli], a
+        ld a, 129 + 8
+        ld [hli], a
+        ld a, [CSSselectionState2]
+        ld [hli], a
+        xor a
+        ld a, %00100000
+        ld [hli], a
+    .return
+    ret 
 
 SECTION "CSS Input Variables", WRAM0
 CSSCurKeys1: db
