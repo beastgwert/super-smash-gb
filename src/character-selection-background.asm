@@ -34,7 +34,7 @@ InitializeCharacterSelectionBackground::
     call MemcopyOffset48  ; Return when done
     ret
 
-CSSInitializeSelectionText:
+InitializeOpeningBackground:
     ; Copy the tile data
 	ld de, CharacterSelectionTextTileData ; de contains the address where data will be copied from;
 	ld hl, $8300 ; hl contains the address where data will be copied to;

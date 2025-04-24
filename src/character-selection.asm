@@ -1,5 +1,6 @@
 INCLUDE "hardware.inc"
 INCLUDE "character-selection-background.asm"
+INCLUDE "character-selection-text.asm"
 ; INCLUDE "arena-background.asm"
 ; INCLUDE "characters.asm"
 
@@ -10,7 +11,6 @@ INCLUDE "character-selection-background.asm"
 ; 	ds $150 - @, 0 ; Make room for the header
 
 CSSEntryPoint:
-
 	; Do not turn the LCD off outside of VBlank
 CSSWaitVBlank:
 	ld a, [rLY]
@@ -168,15 +168,16 @@ CSSSetCharacterSelectionOAM:
     ld a, 12
     cp b ; compare a with b
     jr nz, .michael_jmp 
-    add a, 2
-    ; Don't do the bouncing animation
-    ld c, a
-    ld a, 64 + 16
-    ld de, _OAMRAM
-    ld [de], a
-    ld a, c
+        add a, 2
+        ; Don't do the bouncing animation
+        ld c, a
+        ld a, 64 + 16
+        ld de, _OAMRAM
+        ld [de], a
+        ld a, c
     .michael_jmp
         ld [hli], a
+        xor a
         ld [hli], a
 
 
@@ -328,7 +329,7 @@ CSSInitializeData:
     ld [CSSselectionState2], a
     ld [CSSFrameCounter], a
     ld [CSSselectingPlayer], a
-    ld a, %11011000 ; Different mapping for OBP1
+    ld a, %11101000 ; Different mapping for OBP1
     ld [rOBP1], a    ; Set Object Palette 1
     ret
 
