@@ -11,6 +11,11 @@ character-selection:
 	rgblink -o super-smash-char-select.gb character-selection.o
 	rgbfix -v -p 0xFF super-smash-char-select.gb	
 
+cpu: 
+	rgbasm -o main-cpu.o cpu-main.asm
+	rgblink -o super-smash-cpu.gb main-cpu.o
+	rgbfix -v -p 0xFF super-smash-cpu.gb
+
 clean: 
 	rm -rf *.gb
 	rm -rf *.o 
