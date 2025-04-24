@@ -222,12 +222,16 @@ UpdatePlayer1:
     ld c, a
     ld a, [hl]
     ld b, a
-    call IsGrounded
+    call IsGrounded 
     jp nz, InAir1
+    ; Rest the jump count to 0 if on ground
     ; Set velocity to 0 if on ground
     ld a, [wPlayerDirection1]
     cp a, 0
-    ret nz
+    jr z, InAir1
+    ld a, 0
+    ld [wPlayer1JumpCount], a
+    ret
 InAir1:
     ld a, [wInverseVelocity1]
     cp a, 0
@@ -465,7 +469,7 @@ Right1:
 
 ; Check the up button.
 CheckUp1:
-    ld a, [wCurKeys1]
+    ld a, [wNewKeys1]
     and a, PADF_UP
     jp z, CheckDown1
 Up1:
@@ -477,13 +481,33 @@ Up1:
     ld a, [hl]
     ld b, a
     call IsGrounded
-    ret nz
-    xor a
-    ld [wPlayerDirection1], a
-    ld [wFrameCounter1], a
-    ld [wGravityCounter1], a
-    ld a, 1
-    ld [wInverseVelocity1], a
+    jr nz, .isNotGrounded
+        xor a
+        ld [wPlayerDirection1], a
+        ld [wFrameCounter1], a
+        ld [wGravityCounter1], a
+        ld a, 1
+        ld [wInverseVelocity1], a
+        ld [wPlayer1JumpCount], a ; Load 1 to jump count
+        jr .Return
+    .isNotGrounded
+        ; Now we check for triple jump --> Only double jumps allowed
+        ld a, [wPlayer1JumpCount]
+        cp 2
+        jr nc, .TripleJump ; Jump if player count is greater than or equal to 2
+            xor a
+            ld [wPlayerDirection1], a
+            ld [wFrameCounter1], a
+            ld [wGravityCounter1], a
+            ld a, 1
+            ld [wInverseVelocity1], a
+            ld a, [wPlayer1JumpCount]
+            inc a 
+            ld [wPlayer1JumpCount], a ; Increment jump count
+            ret
+        .TripleJump
+            ret
+    .Return
     ret
 
 ; Check the down button.
@@ -778,12 +802,16 @@ UpdatePlayer2:
     ld c, a
     ld a, [hl]
     ld b, a
-    call IsGrounded
+    call IsGrounded 
     jp nz, InAir2
+    ; Rest the jump count to 0 if on ground
     ; Set velocity to 0 if on ground
     ld a, [wPlayerDirection2]
     cp a, 0
-    ret nz
+    jr z, InAir2
+    ld a, 0
+    ld [wPlayer2JumpCount], a
+    ret
 InAir2:
     ld a, [wInverseVelocity2]
     cp a, 0
@@ -1021,7 +1049,7 @@ Right2:
 
 ; Check the up button.
 CheckUp2:
-    ld a, [wCurKeys2]
+    ld a, [wNewKeys2]
     and a, PADF_UP
     jp z, CheckDown2
 Up2:
@@ -1033,13 +1061,33 @@ Up2:
     ld a, [hl]
     ld b, a
     call IsGrounded
-    ret nz
-    xor a
-    ld [wPlayerDirection2], a
-    ld [wFrameCounter2], a
-    ld [wGravityCounter2], a
-    ld a, 1
-    ld [wInverseVelocity2], a
+    jr nz, .isNotGrounded
+        xor a
+        ld [wPlayerDirection2], a
+        ld [wFrameCounter2], a
+        ld [wGravityCounter2], a
+        ld a, 1
+        ld [wInverseVelocity2], a
+        ld [wPlayer2JumpCount], a ; Load 1 to jump count
+        jr .Return
+    .isNotGrounded
+        ; Now we check for triple jump --> Only double jumps allowed
+        ld a, [wPlayer2JumpCount]
+        cp 2
+        jr nc, .TripleJump ; Jump if player count is greater than or equal to 2
+            xor a
+            ld [wPlayerDirection2], a
+            ld [wFrameCounter2], a
+            ld [wGravityCounter2], a
+            ld a, 1
+            ld [wInverseVelocity2], a
+            ld a, [wPlayer2JumpCount]
+            inc a 
+            ld [wPlayer2JumpCount], a ; Increment jump count
+            ret
+        .TripleJump
+            ret
+    .Return
     ret
 
 ; Check the down button.
@@ -1861,6 +1909,8 @@ wPlayer1AttackMin: db
 wPlayer1AttackRange: db
 wPlayer1Defense: db
 wPlayer1Speed: db
+wPlayer1JumpCount: db
+wPlayer2JumpCount: db
 
 SECTION "Player 2 Stats", WRAM0
 wPlayer2AttackMin: db
