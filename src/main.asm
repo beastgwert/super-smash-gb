@@ -309,6 +309,9 @@ MovesUp1:
     ld l, e
     ld a, [hl]
     sub a, 2
+    jp nc, NotAboveScreen1
+    xor a
+NotAboveScreen1:
     ld [hl], a
     ; Update velocity
     ld a, [wInverseVelocity1]
@@ -944,6 +947,9 @@ MovesUp2:
     ld l, e
     ld a, [hl]
     sub a, 2
+    jp nc, NotAboveScreen2
+    xor a
+NotAboveScreen2:
     ld [hl], a
     ; Update velocity
     ld a, [wInverseVelocity2]
