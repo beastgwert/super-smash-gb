@@ -5,6 +5,7 @@ INCLUDE "digits.asm"
 INCLUDE "utils/sprobjs_lib.asm"
 INCLUDE "character-selection.asm"
 INCLUDE "utils/sgb-utils.asm"
+INCLUDE "background-music.asm"
 
 SECTION "Header", ROM0[$100]
 
@@ -13,7 +14,6 @@ SECTION "Header", ROM0[$100]
 	ds $150 - @, 0 ; Make room for the header
 
 EntryPoint:
-    call InitSound
 
 	; Do not turn the LCD off outside of VBlank
 WaitVBlank:
@@ -24,6 +24,8 @@ WaitVBlank:
 	; Turn the LCD off
 	xor a
 	ld [rLCDC], a
+
+    call InitializeSound
 
     call InitializeBackground
 
@@ -116,6 +118,8 @@ WaitVBlank:
 
 Main:
     call ResetShadowOAM
+
+    call UpdateMusic
 
     ; Check the current keys every frame.
     call UpdateKeys
@@ -533,7 +537,7 @@ CheckA1:
     sub a, c
     ld c, a
     ld a, [hl]
-    ld b, 3
+    ld b, 8
     sub a, b
     ld b, a
     ; Check direction
@@ -543,7 +547,7 @@ CheckA1:
     cp a, 0
     jp nz, FacesLeft1
     ; Faces right
-    ld a, 6
+    ld a, 8
     add a, b
     ld b, a
     ld a, 1
@@ -1090,7 +1094,7 @@ CheckA2:
     sub a, c
     ld c, a
     ld a, [hl]
-    ld b, 3
+    ld b, 8
     sub a, b
     ld b, a
     ; Check direction
@@ -1100,7 +1104,7 @@ CheckA2:
     cp a, 0
     jp nz, FacesLeft2
     ; Faces right
-    ld a, 6
+    ld a, 8
     add a, b
     ld b, a
     ld a, 1
