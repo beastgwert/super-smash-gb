@@ -177,6 +177,12 @@ Neil1:
     ld [wPlayer1Defense], a
     ld a, 1
     ld [wPlayer1Speed], a
+    ld a, 2
+    ld [wPlayer1HitboxX], a
+    ld a, 2
+    ld [wPlayer1Width], a
+    ld a, 9
+    ld [wPlayer1Height], a
     ret
 Krill1:
     ld a, 30
@@ -187,6 +193,12 @@ Krill1:
     ld [wPlayer1Defense], a
     ld a, 5
     ld [wPlayer1Speed], a
+    ld a, 1
+    ld [wPlayer1HitboxX], a
+    ld a, 2
+    ld [wPlayer1Width], a
+    ld a, 13
+    ld [wPlayer1Height], a
     ret
 Omkar1:
     ld a, 20
@@ -197,6 +209,12 @@ Omkar1:
     ld [wPlayer1Defense], a
     ld a, 2
     ld [wPlayer1Speed], a
+    ld a, 1
+    ld [wPlayer1HitboxX], a
+    ld a, 2
+    ld [wPlayer1Width], a
+    ld a, 10
+    ld [wPlayer1Height], a
     ret
 Caleb1:
     ld a, 6
@@ -207,6 +225,12 @@ Caleb1:
     ld [wPlayer1Defense], a
     ld a, 4
     ld [wPlayer1Speed], a
+    ld a, 0
+    ld [wPlayer1HitboxX], a
+    ld a, 3
+    ld [wPlayer1Width], a
+    ld a, 10
+    ld [wPlayer1Height], a
     ret
 Michael1:
     ld a, 14
@@ -217,6 +241,12 @@ Michael1:
     ld [wPlayer1Defense], a
     ld a, 3
     ld [wPlayer1Speed], a
+    ld a, 0
+    ld [wPlayer1HitboxX], a
+    ld a, 2
+    ld [wPlayer1Width], a
+    ld a, 12
+    ld [wPlayer1Height], a
     ret
 
 ; Update the player's position based on their velocity
@@ -228,7 +258,7 @@ UpdatePlayer1:
     ld c, a
     ld a, [hl]
     ld b, a
-    call IsGrounded 
+    call IsGrounded1
     jp nz, InAir1
     ; Rest the jump count to 0 if on ground
     ; Set velocity to 0 if on ground
@@ -294,7 +324,7 @@ MaximumVelocity1:
     ld a, [hl]
     ld b, a
     ; Check if player hits ground
-    call IsGrounded
+    call IsGrounded1
     jp z, HitsGround1
     ret
 HitsGround1:
@@ -520,7 +550,7 @@ Up1:
     ld c, a
     ld a, [hl]
     ld b, a
-    call IsGrounded
+    call IsGrounded1
     jr nz, .isNotGrounded
         xor a
         ld [wPlayerDirection1], a
@@ -563,7 +593,7 @@ Down1:
     ld c, a
     ld a, [hl]
     ld b, a
-    call IsGrounded
+    call IsGrounded1
     ret nz
     ; Do not move down if on the base tile
     ld h, d
@@ -597,8 +627,7 @@ CheckA1:
     ld h, d
     ld l, e
     ld a, [hli]
-    ld c, 8
-    sub a, c
+    sub a, 8
     ld c, a
     ld a, [hl]
     ld b, 8
@@ -609,7 +638,7 @@ CheckA1:
     cp a, 0
     jp nz, FacesLeft1
     ; Faces right
-    ld a, 8
+    ld a, 7
     add a, b
     ld b, a
     ld a, 1
@@ -620,8 +649,17 @@ FacesLeft1:
     ld [wKBDirection2], a
 CheckHit1:
     call HitsPlayer2
-    jp nc, SetAttackSprite1
-
+    jp c, PerformAttack1
+    ld a, [wKBDirection2]
+    add a, a
+    ld h, a
+    ld a, b
+    sub a, h
+    ld b, a
+    call HitsPlayer2
+    jp c, PerformAttack1
+    jp SetAttackSprite1
+PerformAttack1:
     ; Perform attack
     call CalculatePlayer1Attack
     ld a, [wPlayer2HP]
@@ -722,31 +760,70 @@ DashRight1:
     ret
 
 ; Check if a pixel intersects with player's hitbox
+; (left + x - 1, left + x + width - 1] X (bottom - height - 1, bottom - 1]
+; is hitbox when facing right
+; (right - x - width - 1, right - x - 1] X (bottom - height - 1, bottom - 1]
+; is hitbox when facing left
 ; @param b: pixel X
 ; @param c: pixel Y
 ; @return c (flag): set if player is hit
 HitsPlayer1:
-    ; check right X >= pixel X
-    ld a, [wShadowOAM+57]
-    cp a, b
-    ccf
-    ret nc
-    ; check left X < pixel X
-    sub a, 8
-    cp a, b
-    ret nc
-    ; check bottom Y >= pixel Y
+    ; check pixel Y <= bottom - 1
     ld a, [wShadowOAM+56]
+    dec a
     cp a, c
-    ccf
+    ccf 
     ret nc
-    ; check top Y < pixel Y
+
+    ; check pixel Y > bottom - height - 1
     ld h, a
-    ld a, [wPlayerHitbox1]
-    ld b, a
+    ld a, [wPlayer1Height]
+    ld l, a
     ld a, h
-    sub a, b
+    sub a, l
     cp a, c
+    ret nc
+
+    ld a, [wFacesLeft1]
+    cp a, 0
+    jp z, RightCheck1
+
+    ; check pixel X <= right - x - 1
+    ld a, [wShadowOAM+57]
+    ld h, a
+    ld a, [wPlayer1HitboxX]
+    ld l, a
+    ld a, h
+    sub a, l
+    dec a
+    cp a, b
+    ccf 
+    ret nc
+
+    ; check pixel X > right - x - width - 1
+    ld h, a
+    ld a, [wPlayer1Width]
+    ld l, a
+    ld a, h
+    sub a, l
+    cp a, b
+    ret
+RightCheck1:
+    ; check pixel X > left + x - 1
+    ld a, [wShadowOAM+57]
+    sub a, 9
+    ld h, a
+    ld a, [wPlayer1HitboxX]
+    add a, h
+    cp a, b
+    ret nc
+
+    ; check pixel X <= left + x + width - 1
+    ld h, a
+    ld a, [wPlayer1Width]
+    add a, h
+    cp a, b
+    ccf
     ret
 
 ; @return b: damage inflicted
@@ -815,6 +892,12 @@ Neil2:
     ld [wPlayer2Defense], a
     ld a, 1
     ld [wPlayer2Speed], a
+    ld a, 2
+    ld [wPlayer2HitboxX], a
+    ld a, 2
+    ld [wPlayer2Width], a
+    ld a, 9
+    ld [wPlayer2Height], a
     ret
 Krill2:
     ld a, 30
@@ -825,6 +908,12 @@ Krill2:
     ld [wPlayer2Defense], a
     ld a, 5
     ld [wPlayer2Speed], a
+    ld a, 1
+    ld [wPlayer2HitboxX], a
+    ld a, 2
+    ld [wPlayer2Width], a
+    ld a, 13
+    ld [wPlayer2Height], a
     ret
 Omkar2:
     ld a, 20
@@ -835,6 +924,12 @@ Omkar2:
     ld [wPlayer2Defense], a
     ld a, 2
     ld [wPlayer2Speed], a
+    ld a, 1
+    ld [wPlayer2HitboxX], a
+    ld a, 2
+    ld [wPlayer2Width], a
+    ld a, 10
+    ld [wPlayer2Height], a
     ret
 Caleb2:
     ld a, 6
@@ -845,6 +940,12 @@ Caleb2:
     ld [wPlayer2Defense], a
     ld a, 4
     ld [wPlayer2Speed], a
+    ld a, 0
+    ld [wPlayer2HitboxX], a
+    ld a, 3
+    ld [wPlayer2Width], a
+    ld a, 10
+    ld [wPlayer2Height], a
     ret
 Michael2:
     ld a, 14
@@ -855,6 +956,12 @@ Michael2:
     ld [wPlayer2Defense], a
     ld a, 3
     ld [wPlayer2Speed], a
+    ld a, 0
+    ld [wPlayer2HitboxX], a
+    ld a, 2
+    ld [wPlayer2Width], a
+    ld a, 12
+    ld [wPlayer2Height], a
     ret
 
 ; Update the player's position based on their velocity
@@ -866,7 +973,7 @@ UpdatePlayer2:
     ld c, a
     ld a, [hl]
     ld b, a
-    call IsGrounded 
+    call IsGrounded2
     jp nz, InAir2
     ; Rest the jump count to 0 if on ground
     ; Set velocity to 0 if on ground
@@ -932,7 +1039,7 @@ MaximumVelocity2:
     ld a, [hl]
     ld b, a
     ; Check if player hits ground
-    call IsGrounded
+    call IsGrounded2
     jp z, HitsGround2
     ret
 HitsGround2:
@@ -1158,7 +1265,7 @@ Up2:
     ld c, a
     ld a, [hl]
     ld b, a
-    call IsGrounded
+    call IsGrounded2
     jr nz, .isNotGrounded
         xor a
         ld [wPlayerDirection2], a
@@ -1201,7 +1308,7 @@ Down2:
     ld c, a
     ld a, [hl]
     ld b, a
-    call IsGrounded
+    call IsGrounded2
     ret nz
     ; Do not move down if on the base tile
     ld h, d
@@ -1236,8 +1343,7 @@ CheckA2:
     ld h, d
     ld l, e
     ld a, [hli]
-    ld c, 8
-    sub a, c
+    sub a, 8
     ld c, a
     ld a, [hl]
     ld b, 8
@@ -1248,7 +1354,7 @@ CheckA2:
     cp a, 0
     jp nz, FacesLeft2
     ; Faces right
-    ld a, 8
+    ld a, 7
     add a, b
     ld b, a
     ld a, 1
@@ -1259,8 +1365,17 @@ FacesLeft2:
     ld [wKBDirection1], a
 CheckHit2:
     call HitsPlayer1
-    jp nc, SetAttackSprite2
-
+    jp c, PerformAttack2
+    ld a, [wKBDirection1]
+    add a, a
+    ld h, a
+    ld a, b
+    sub a, h
+    ld b, a
+    call HitsPlayer1
+    jp c, PerformAttack2
+    jp SetAttackSprite2
+PerformAttack2:
     ; Perform attack
     call CalculatePlayer2Attack
     ld a, [wPlayer1HP]
@@ -1362,31 +1477,70 @@ DashRight2:
     ret
 
 ; Check if a pixel intersects with player's hitbox
+; (left + x - 1, left + x + width - 1] X (bottom - height - 1, bottom - 1]
+; is hitbox when facing right
+; (right - x - width - 1, right - x - 1] X (bottom - height - 1, bottom - 1]
+; is hitbox when facing left
 ; @param b: pixel X
 ; @param c: pixel Y
 ; @return c (flag): set if player is hit
 HitsPlayer2:
-    ; check right X >= pixel X
-    ld a, [wShadowOAM+61]
-    cp a, b
-    ccf
-    ret nc
-    ; check left X < pixel X
-    sub a, 8
-    cp a, b
-    ret nc
-    ; check bottom Y >= pixel Y
+    ; check pixel Y <= bottom - 1
     ld a, [wShadowOAM+60]
+    dec a
     cp a, c
-    ccf
+    ccf 
     ret nc
-    ; check top Y < pixel Y
+
+    ; check pixel Y > bottom - height - 1
     ld h, a
-    ld a, [wPlayerHitbox2]
-    ld b, a
+    ld a, [wPlayer2Height]
+    ld l, a
     ld a, h
-    sub a, b
+    sub a, l
     cp a, c
+    ret nc
+
+    ld a, [wFacesLeft2]
+    cp a, 0
+    jp z, RightCheck2
+
+    ; check pixel X <= right - x - 1
+    ld a, [wShadowOAM+61]
+    ld h, a
+    ld a, [wPlayer2HitboxX]
+    ld l, a
+    ld a, h
+    sub a, l
+    dec a
+    cp a, b
+    ccf 
+    ret nc
+
+    ; check pixel X > right - x - width - 1
+    ld h, a
+    ld a, [wPlayer2Width]
+    ld l, a
+    ld a, h
+    sub a, l
+    cp a, b
+    ret
+RightCheck2:
+    ; check pixel X > left + x - 1
+    ld a, [wShadowOAM+61]
+    sub a, 9
+    ld h, a
+    ld a, [wPlayer2HitboxX]
+    add a, h
+    cp a, b
+    ret nc
+
+    ; check pixel X <= left + x + width - 1
+    ld h, a
+    ld a, [wPlayer2Width]
+    add a, h
+    cp a, b
+    ccf
     ret
 
 ; @return b: damage inflicted
@@ -1436,33 +1590,121 @@ NoDef252:
     ret
 
 ; Check if player is on the ground
+; (left + x, bottom) and (left + x + width - 1, bottom)
+; are checked when facing right
+; (right - x - width, bottom) and (right - x - 1, bottom)
+; are checked when facing left
 ; @param b: X (bottom right)
 ; @param c: Y (bottom right)
 ; @return z: set if grounded
-IsGrounded:
+IsGrounded1:
+    ld a, [wFacesLeft1]
+    cp a, 0
+    jp z, RightHitbox1
+    ; Left hitbox
     ; Check bottom right
-    call GetTileByPixel
-    ld a, [hl]
-    call IsWallTile
-    ret z
-
-    ; Check bottom middle
+    ld a, [wPlayer1HitboxX]
+    ld h, a
     ld a, b
-    sub a, 4
+    sub a, h
+    dec a
     ld b, a
     call GetTileByPixel
     ld a, [hl]
     call IsWallTile
     ret z
 
+    ; Check bottom right
+    ld a, [wPlayer1Width]
+    ld h, a
+    ld a, b
+    sub a, h
+    inc a
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+    ret
+RightHitbox1:
     ; Check bottom left
     ld a, b
-    sub a, 4
+    sub a, 8
+    ld b, a
+    ld a, [wPlayer1HitboxX]
+    add a, b
     ld b, a
     call GetTileByPixel
     ld a, [hl]
     call IsWallTile
+    ret z
 
+    ; Check bottom right
+    ld a, [wPlayer1Width]
+    add a, b
+    dec a
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+    ret
+
+; Check if player is on the ground
+; (left + x, bottom) and (left + x + width - 1, bottom)
+; are checked when facing right
+; (right - x - width, bottom) and (right - x - 1, bottom)
+; are checked when facing left
+; @param b: X (bottom right)
+; @param c: Y (bottom right)
+; @return z: set if grounded
+IsGrounded2:
+    ld a, [wFacesLeft2]
+    cp a, 0
+    jp z, RightHitbox2
+    ; Left hitbox
+    ; Check bottom right
+    ld a, [wPlayer2HitboxX]
+    ld h, a
+    ld a, b
+    sub a, h
+    dec a
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+    ret z
+
+    ; Check bottom right
+    ld a, [wPlayer2Width]
+    ld h, a
+    ld a, b
+    sub a, h
+    inc a
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+    ret
+RightHitbox2:
+    ; Check bottom left
+    ld a, b
+    sub a, 8
+    ld b, a
+    ld a, [wPlayer2HitboxX]
+    add a, b
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
+    ret z
+
+    ; Check bottom right
+    ld a, [wPlayer2Width]
+    add a, b
+    dec a
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsWallTile
     ret
 
 ; Check if player is on the base platform
@@ -2021,20 +2263,25 @@ wFacesLeft1: db
 wDashTimer1: db
 wDashCooldown1: db
 wDashAmount1: db
+wPlayer1JumpCount: db
 
 SECTION "Player 1 Stats", WRAM0
 wPlayer1AttackMin: db
 wPlayer1AttackRange: db
 wPlayer1Defense: db
 wPlayer1Speed: db
-wPlayer1JumpCount: db
-wPlayer2JumpCount: db
+wPlayer1HitboxX: db ; (x - 1, x + width - 1] X
+wPlayer1Width: db ; (bottom - height, bottom] is hitbox
+wPlayer1Height: db ; when facing right
 
 SECTION "Player 2 Stats", WRAM0
 wPlayer2AttackMin: db
 wPlayer2AttackRange: db
 wPlayer2Defense: db
 wPlayer2Speed: db
+wPlayer2HitboxX: db ; (right - x - width - 1, right - x - 1] X
+wPlayer2Width: db ; (bottom - height, bottom] is hitbox
+wPlayer2Height: db ; when facing left
 
 SECTION "Player 2 Data", WRAM0
 wPlayerDirection2: db
@@ -2052,6 +2299,7 @@ wFacesLeft2: db
 wDashTimer2: db
 wDashCooldown2: db
 wDashAmount2: db
+wPlayer2JumpCount: db
 
 SECTION "HP Data", WRAM0
 wPlayer1HP:: db
