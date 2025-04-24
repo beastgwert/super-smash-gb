@@ -123,32 +123,32 @@ MusicData:
     
     ; Main battle theme - Part 1 (more agressive rhythm)
     db 0, C3_LO, C3_HI, EIGHTH, 15, 0     ; Bass pattern
-    db 3, $10, 0, EIGHTH, 15, 0           ; Noise hit
+    ; db 3, $10, 0, EIGHTH, 15, 0           ; Noise hit
     db 0, G3_LO, G3_HI, EIGHTH, 15, 0
     db 1, C4_LO, C4_HI, EIGHTH, 10, 0
     db 0, C3_LO, C3_HI, EIGHTH, 15, 0
     db 0, G3_LO, G3_HI, EIGHTH, 15, 0
     db 1, E4_LO, E4_HI, EIGHTH, 12, 0
-    db 3, $20, 0, EIGHTH, 15, 0
+    ; db 3, $20, 0, EIGHTH, 15, 0
     
     db 0, D3_LO, D3_HI, EIGHTH, 15, 0
-    db 3, $30, 0, EIGHTH, 15, 0
+    ; db 3, $30, 0, EIGHTH, 15, 0
     db 0, A3_LO, A3_HI, EIGHTH, 15, 0
     db 1, D4_LO, D4_HI, EIGHTH, 10, 0
     db 0, D3_LO, D3_HI, EIGHTH, 15, 0
     db 0, A3_LO, A3_HI, EIGHTH, 15, 0
     db 1, F4_LO, F4_HI, EIGHTH, 12, 0
-    db 3, $40, 0, EIGHTH, 15, 0
+    ; db 3, $40, 0, EIGHTH, 15, 0
     
     ; Main battle theme - Part 2 (climactic section)
     db 0, G3_LO, G3_HI, EIGHTH, 15, 0
     db 1, G4_LO, G4_HI, EIGHTH, 13, 0
-    db 3, $50, 0, EIGHTH, 15, 0
+    ; db 3, $50, 0, EIGHTH, 15, 0
     db 0, F3_LO, F3_HI, EIGHTH, 15, 0
     db 1, F4_LO, F4_HI, EIGHTH, 13, 0
     db 0, E3_LO, E3_HI, EIGHTH, 15, 0
     db 1, E4_LO, E4_HI, EIGHTH, 13, 0
-    db 3, $60, 0, EIGHTH, 15, 0
+    ; db 3, $60, 0, EIGHTH, 15, 0
     
     db 0, D3_LO, D3_HI, EIGHTH, 15, 0
     db 1, D4_LO, D4_HI, EIGHTH, 13, 0
@@ -156,7 +156,7 @@ MusicData:
     db 1, E4_LO, E4_HI, EIGHTH, 13, 0
     db 0, F3_LO, F3_HI, EIGHTH, 15, 0
     db 1, F4_LO, F4_HI, EIGHTH, 13, 0
-    db 3, $70, 0, EIGHTH, 15, 0
+    ; db 3, $70, 0, EIGHTH, 15, 0
     db 0, G3_LO, G3_HI, QUARTER, 15, 1    ; Slide up effect
     db 1, G4_LO, G4_HI, QUARTER, 13, 1    ; Slide up effect
     
