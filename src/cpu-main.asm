@@ -32,7 +32,6 @@ WaitVBlank:
 
     call InitializeSound
 
-
     call InitializeBackground
 
     call InitializeCharacters
@@ -55,11 +54,12 @@ WaitVBlank:
     ld hl, wShadowOAM + 56
     ld a, 56 + 16
     ld [hli], a
-    ld a, 112 + 8
+    ld a, 108 + 8
     ld [hli], a
     ld a, [CSSselectionState1]
     ld [hli], a
-    xor a
+    ; Flip player 2
+    ld a, %00100000
     ld [hli], a
 
     ld a, 56 + 16
@@ -94,7 +94,7 @@ WaitVBlank:
     ld [wSpeedCounter1], a
     ld [wPlayerStun1], a
     ld [wKBDirection1], a
-    ld [wFacesLeft1], a
+    ; ld [wFacesLeft1], a
     ld [wDashTimer1], a
     ld [wDashCooldown1], a
     ld [wDashAmount1], a
@@ -119,9 +119,8 @@ WaitVBlank:
     ld [wPlayer2HPTens], a
     ld [wPlayer2HPOnes], a
 
-    ; CPU specific initalization
-    ld [player_2_last_x], a
-    ld [call_counter], a
+    ld a, 1
+    ld [wFacesLeft1], a
 
     ld a, 16
     ld [wPlayerHitbox1], a
@@ -581,7 +580,7 @@ Up1:
             ld [wPlayerDirection1], a
             ld [wFrameCounter1], a
             ld [wGravityCounter1], a
-            ld a, 1
+            ld a, 2
             ld [wInverseVelocity1], a
             ld a, [wPlayer1JumpCount]
             inc a 
@@ -619,7 +618,7 @@ Down1:
     ld h, d
     ld l, e
     ld a, [hl]
-    add a, 1
+    add a, 2
     ld [hl], a
     ret
 
@@ -660,6 +659,14 @@ FacesLeft1:
     ld a, -1
     ld [wKBDirection2], a
 CheckHit1:
+    call HitsPlayer2
+    jp c, PerformAttack1
+    ld a, [wKBDirection2]
+    add a, a
+    ld h, a
+    ld a, b
+    sub a, h
+    ld b, a
     call HitsPlayer2
     jp c, PerformAttack1
     ld a, [wKBDirection2]
@@ -727,7 +734,7 @@ SetAttackSprite1:
     
     ; Set timer for how long to display the attack sprite
     ; 30 frames ≈ 0.5 seconds at 60fps
-    ld a, 60
+    ld a, 40
     ld [wSpriteChangeTimer1], a
     ret
 
@@ -1215,7 +1222,7 @@ Left2:
 
 ; Check the right button.
 CheckRight2:
-    ld a, [wNewKeys2]
+    ld a, [wCurKeys2]
     and a, PADF_RIGHT
     jp z, CheckUp2
 Right2:
@@ -1296,7 +1303,7 @@ Up2:
             ld [wPlayerDirection2], a
             ld [wFrameCounter2], a
             ld [wGravityCounter2], a
-            ld a, 1
+            ld a, 2
             ld [wInverseVelocity2], a
             ld a, [wPlayer2JumpCount]
             inc a 
@@ -1314,12 +1321,12 @@ CheckDown2:
     ret z
 Down2:
     ; Move down if on the ground
-    ; ld h, d
-    ; ld l, e
-    ; ld a, [hli]
-    ; ld c, a
-    ; ld a, [hl]
-    ; ld b, a
+    ld h, d
+    ld l, e
+    ld a, [hli]
+    ld c, a
+    ld a, [hl]
+    ld b, a
     ; call IsGrounded
     ; ret nz
     ; Do not move down if on the base tile
@@ -1334,7 +1341,7 @@ Down2:
     ld h, d
     ld l, e
     ld a, [hl]
-    add a, 1
+    add a, 2
     ld [hl], a
     ret
 
@@ -1478,6 +1485,14 @@ CheckHit2:
     ld b, a
     call HitsPlayer1
     jp c, PerformAttack2
+    ld a, [wKBDirection1]
+    add a, a
+    ld h, a
+    ld a, b
+    sub a, h
+    ld b, a
+    call HitsPlayer1
+    jp c, PerformAttack2
     jp SetAttackSprite2
 PerformAttack2:
     ; Perform attack
@@ -1535,7 +1550,7 @@ SetAttackSprite2:
     
     ; Set timer for how long to display the attack sprite
     ; 30 frames ≈ 0.5 seconds at 60fps
-    ld a, 60
+    ld a, 40
     ld [wSpriteChangeTimer2], a
     ret
 
@@ -1937,27 +1952,29 @@ ContinueCalc:
 ; @return z: set if a is a wall.
 IsWallTile:
     ; top platform
-    cp a, $53
+    cp a, $5C
     ret z
-    cp a, $54
+    cp a, $5D
+    ret z
+    cp a, $5E
     ret z
     ; left platform
+    cp a, $7B
+    ret z
     cp a, $7C
     ret z
     cp a, $7D
     ret z
     cp a, $7E
     ret z
-    cp a, $7F
-    ret z
     ; right platform
+    cp a, $80
+    ret z
     cp a, $81
     ret z
     cp a, $82
     ret z
     cp a, $83
-    ret z
-    cp a, $84
     ret z
     ; base platform
     call IsBaseTile
@@ -1966,29 +1983,29 @@ IsWallTile:
 ; @param a: tile ID
 ; @return z: set if a is a base.
 IsBaseTile:
+    cp a, $A8
+    ret z
+    cp a, $A9
+    ret z
+    cp a, $AA
+    ret z
+    cp a, $AB
+    ret z
+    cp a, $AC
+    ret z
+    cp a, $AD
+    ret z
+    cp a, $AE
+    ret z
+    cp a, $AF
+    ret z
+    cp a, $B0
+    ret z
+    cp a, $B1
+    ret z
     cp a, $B2
     ret z
     cp a, $B3
-    ret z
-    cp a, $B4
-    ret z
-    cp a, $B5
-    ret z
-    cp a, $B6
-    ret z
-    cp a, $B7
-    ret z
-    cp a, $B8
-    ret z
-    cp a, $B9
-    ret z
-    cp a, $BA
-    ret z
-    cp a, $BB
-    ret z
-    cp a, $BC
-    ret z
-    cp a, $BD
     ret 
 
 UpdatePlayerIndicators:
@@ -2191,7 +2208,7 @@ UpdateLivesDisplay::
     
 .blankTileP1
     ; Use blank tile
-    ld a, 57
+    ld a, $30
     
 .setTileP1
     ld [hli], a
@@ -2243,7 +2260,7 @@ UpdateLivesDisplay::
     
 .blankTileP2
     ; Use blank tile
-    ld a, 57
+    ld a, $30
     
 .setTileP2
     ld [hli], a
@@ -2334,10 +2351,8 @@ PlayerHitSound:
     ; Trigger and set upper freq bits
     ld a, %11000110  ; Trigger + don't loop + freq bits
     ld [$FF14], a
+    
     ret
-
-
-
 
 SECTION "Input Variables", WRAM0
 wCurKeys1: db
@@ -2406,7 +2421,6 @@ wPlayer1HPTens:: db
 wPlayer1HPOnes:: db
 wPlayer2HPTens:: db
 wPlayer2HPOnes:: db
-
 
 
 SECTION "MathVariables", WRAM0

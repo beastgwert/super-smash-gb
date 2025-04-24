@@ -121,7 +121,7 @@ ProximityCheck:
         ld b, c
     .no_swap
     sub a, b
-    cp 3
+    cp 5
     jr c, .too_close
         ld d, 0
         jr .return
