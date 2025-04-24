@@ -61,5 +61,5 @@ CSSTextUpdateGameState:
     inc [hl]
     ld a, [hl]
     cp a, %11111111
-    jp z, CSSWaitVBlank
+    jp z, CSSEntryPoint
     ret

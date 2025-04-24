@@ -371,9 +371,6 @@ CSSCheckFinish:
         ld a, [CSSNewKeys2]
         and a, PADF_A
         jr z, .return_second_player
-        ; Little fighting animation
-        ; call CSSAttackingAnimation
-        ; Jump to game
         jp WaitVBlank
         .return_second_player
         ret
