@@ -89,7 +89,7 @@ WaitVBlank:
     ld [wSpeedCounter1], a
     ld [wPlayerStun1], a
     ld [wKBDirection1], a
-    ld [wFacesLeft1], a
+    ; ld [wFacesLeft1], a
     ld [wDashTimer1], a
     ld [wDashCooldown1], a
     ld [wDashAmount1], a
@@ -113,6 +113,9 @@ WaitVBlank:
     ld [wPlayer1HPOnes], a
     ld [wPlayer2HPTens], a
     ld [wPlayer2HPOnes], a
+
+    ld a, 1
+    ld [wFacesLeft1], a
 
     ld a, 16
     ld [wPlayerHitbox1], a
@@ -570,7 +573,7 @@ Up1:
             ld [wPlayerDirection1], a
             ld [wFrameCounter1], a
             ld [wGravityCounter1], a
-            ld a, 1
+            ld a, 2
             ld [wInverseVelocity1], a
             ld a, [wPlayer1JumpCount]
             inc a 
@@ -659,6 +662,14 @@ CheckHit1:
     ld b, a
     call HitsPlayer2
     jp c, PerformAttack1
+    ld a, [wKBDirection2]
+    add a, a
+    ld h, a
+    ld a, b
+    sub a, h
+    ld b, a
+    call HitsPlayer2
+    jp c, PerformAttack1
     jp SetAttackSprite1
 PerformAttack1:
     ; Perform attack
@@ -716,7 +727,7 @@ SetAttackSprite1:
     
     ; Set timer for how long to display the attack sprite
     ; 30 frames ≈ 0.5 seconds at 60fps
-    ld a, 60
+    ld a, 40
     ld [wSpriteChangeTimer1], a
     ret
 
@@ -1285,7 +1296,7 @@ Up2:
             ld [wPlayerDirection2], a
             ld [wFrameCounter2], a
             ld [wGravityCounter2], a
-            ld a, 1
+            ld a, 2
             ld [wInverseVelocity2], a
             ld a, [wPlayer2JumpCount]
             inc a 
@@ -1375,6 +1386,14 @@ CheckHit2:
     ld b, a
     call HitsPlayer1
     jp c, PerformAttack2
+    ld a, [wKBDirection1]
+    add a, a
+    ld h, a
+    ld a, b
+    sub a, h
+    ld b, a
+    call HitsPlayer1
+    jp c, PerformAttack2
     jp SetAttackSprite2
 PerformAttack2:
     ; Perform attack
@@ -1432,7 +1451,7 @@ SetAttackSprite2:
     
     ; Set timer for how long to display the attack sprite
     ; 30 frames ≈ 0.5 seconds at 60fps
-    ld a, 60
+    ld a, 40
     ld [wSpriteChangeTimer2], a
     ret
 
