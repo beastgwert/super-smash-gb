@@ -334,11 +334,11 @@ CSSUpdateGameState:
 CSSBouncingAnimation: 
     ld c, a
     ld a, [CSSFrameCounter]
-    and a, %00100000
+    and a, %00010000
     srl a 
     srl a
     srl a
-    srl a
+    ; srl a
     cpl
     inc a; 
     add a, c
