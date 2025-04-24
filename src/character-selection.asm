@@ -95,13 +95,13 @@ CSSUpdateSelectionState1:
         ; Take the mod of CSSselectionState1 and return
         ; We do CSSselectionState1 % 24
         ld a, [CSSselectionState1]
-        cp 24
+        cp 20
         jp nz, .no_overflow
         ld a, 0
         .no_overflow
         cp -4
         jp nz, .no_underflow
-        ld a, 20
+        ld a, 16
         .no_underflow
         ld [CSSselectionState1], a
         ret
