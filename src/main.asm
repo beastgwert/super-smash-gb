@@ -49,11 +49,12 @@ WaitVBlank:
     ld hl, wShadowOAM + 56
     ld a, 56 + 16
     ld [hli], a
-    ld a, 112 + 8
+    ld a, 108 + 8
     ld [hli], a
     ld a, [CSSselectionState1]
     ld [hli], a
-    xor a
+    ; Flip player 2
+    ld a, %00100000
     ld [hli], a
 
     ld a, 56 + 16
