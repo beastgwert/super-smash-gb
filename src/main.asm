@@ -1841,27 +1841,29 @@ ContinueCalc:
 ; @return z: set if a is a wall.
 IsWallTile:
     ; top platform
-    cp a, $53
+    cp a, $5C
     ret z
-    cp a, $54
+    cp a, $5D
+    ret z
+    cp a, $5E
     ret z
     ; left platform
+    cp a, $7B
+    ret z
     cp a, $7C
     ret z
     cp a, $7D
     ret z
     cp a, $7E
     ret z
-    cp a, $7F
-    ret z
     ; right platform
+    cp a, $80
+    ret z
     cp a, $81
     ret z
     cp a, $82
     ret z
     cp a, $83
-    ret z
-    cp a, $84
     ret z
     ; base platform
     call IsBaseTile
@@ -1870,29 +1872,29 @@ IsWallTile:
 ; @param a: tile ID
 ; @return z: set if a is a base.
 IsBaseTile:
+    cp a, $A8
+    ret z
+    cp a, $A9
+    ret z
+    cp a, $AA
+    ret z
+    cp a, $AB
+    ret z
+    cp a, $AC
+    ret z
+    cp a, $AD
+    ret z
+    cp a, $AE
+    ret z
+    cp a, $AF
+    ret z
+    cp a, $B0
+    ret z
+    cp a, $B1
+    ret z
     cp a, $B2
     ret z
     cp a, $B3
-    ret z
-    cp a, $B4
-    ret z
-    cp a, $B5
-    ret z
-    cp a, $B6
-    ret z
-    cp a, $B7
-    ret z
-    cp a, $B8
-    ret z
-    cp a, $B9
-    ret z
-    cp a, $BA
-    ret z
-    cp a, $BB
-    ret z
-    cp a, $BC
-    ret z
-    cp a, $BD
     ret 
 
 UpdatePlayerIndicators:
@@ -2095,7 +2097,7 @@ UpdateLivesDisplay::
     
 .blankTileP1
     ; Use blank tile
-    ld a, 57
+    ld a, $30
     
 .setTileP1
     ld [hli], a
@@ -2147,7 +2149,7 @@ UpdateLivesDisplay::
     
 .blankTileP2
     ; Use blank tile
-    ld a, 57
+    ld a, $30
     
 .setTileP2
     ld [hli], a
