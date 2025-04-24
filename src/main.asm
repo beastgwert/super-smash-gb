@@ -88,6 +88,10 @@ WaitVBlank:
     ld [wSpeedCounter1], a
     ld [wPlayerStun1], a
     ld [wKBDirection1], a
+    ld [wFacesLeft1], a
+    ld [wDashTimer1], a
+    ld [wDashCooldown1], a
+    ld [wDashAmount1], a
 
     ld [wFrameCounter2], a
     ld [wInverseVelocity2], a
@@ -97,6 +101,10 @@ WaitVBlank:
     ld [wSpeedCounter2], a
     ld [wPlayerStun2], a
     ld [wKBDirection2], a
+    ld [wFacesLeft2], a
+    ld [wDashTimer2], a
+    ld [wDashCooldown2], a
+    ld [wDashAmount2], a
 
     ld [wPlayer1HP], a
     ld [wPlayer2HP], a
@@ -127,12 +135,10 @@ Main:
     ld de, wShadowOAM+56
     call UpdatePlayer1
     call CheckMovement1
-    call UpdateSprite1
 
     ld de, wShadowOAM+60
     call UpdatePlayer2
     call CheckMovement2
-    call UpdateSprite2
 
     call UpdatePlayerIndicators
     call UpdateHPDisplay
@@ -356,37 +362,65 @@ ResetPlayer1:
 ; Move if an arrow key was pressed
 CheckMovement1:
 
-; Check stun
-ld a, [wPlayerStun1]
-cp a, 0
-jp z, CheckLeft1
-dec a
-ld [wPlayerStun1], a
-ld hl, 1
-add hl, de
-ld a, [hl]
-ld b, a
-ld a, [wKBDirection1]
-add a, b
-ld [hl], a
-ret
+    ; Decrease dash cooldown
+    ld a, [wDashCooldown1]
+    cp a, 0
+    jp z, NoCooldown1
+    dec a
+    ld [wDashCooldown1], a
+NoCooldown1:
+    ; Check stun
+    ld a, [wPlayerStun1]
+    cp a, 0
+    jp z, CheckDash1
+    dec a
+    ld [wPlayerStun1], a
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    ld b, a
+    ld a, [wKBDirection1]
+    add a, b
+    ld [hl], a
+    ret
+
+CheckDash1:
+    ; Check dash
+    ld a, [wDashTimer1]
+    cp a, 0
+    jp z, CheckLeft1
+    dec a
+    ld [wDashTimer1], a
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    ld b, a
+    ld a, [wDashAmount1]
+    add a, b
+    ld [hl], a
+    ret
 
 ; Check the left button.
 CheckLeft1:
+    call CheckA1
+    call CheckB1
     ld a, [wCurKeys1]
     and a, PADF_LEFT
     jp z, CheckRight1
 Left1:
     ; Check if already facing left
-    ld hl, 3
-    add hl, de
-    ld a, [hl]
-    bit 5, a  ; Check if horizontal flip bit is already set
+    ld a, [wFacesLeft1]
+    cp a, 0
     jr nz, .alreadyFacingLeft
     
     ; If not already facing left, set the horizontal flip flag and adjust position
+    ld hl, 3
+    add hl, de
     or a, %00100000  ; Set horizontal flip bit (bit 5)
     ld [hl], a
+
+    ld a, 1
+    ld [wFacesLeft1], a
     
     ; Adjust X position to account for sprite flip (move 4 pixels left)
     ld hl, 1
@@ -426,16 +460,19 @@ CheckRight1:
     jp z, CheckUp1
 Right1:
     ; Check if already facing right
-    ld hl, 3
-    add hl, de
-    ld a, [hl]
-    bit 5, a  ; Check if horizontal flip bit is set
+    ld a, [wFacesLeft1]
+    cp a, 0
     jr z, .alreadyFacingRight
     
     ; If not already facing right, clear the horizontal flip flag and adjust position
+    ld hl, 3
+    add hl, de
     and a, %11011111  ; Clear horizontal flip bit (bit 5)
     ld [hl], a
     
+    xor a
+    ld [wFacesLeft1], a
+
     ; Adjust X position to account for sprite flip (move 4 pixels right)
     ld hl, 1
     add hl, de
@@ -565,9 +602,7 @@ CheckA1:
     sub a, b
     ld b, a
     ; Check direction
-    ld hl, 3
-    add hl, de
-    ld a, [hl]
+    ld a, [wFacesLeft1]
     cp a, 0
     jp nz, FacesLeft1
     ; Faces right
@@ -655,6 +690,32 @@ SetDefaultSprite1:
     ld [hli], a
     ld a, [CSSselectionState1]                        ; Set tile ID to 0 (default sprite)
     ld [hli], a
+    ret
+
+CheckB1:
+    ld a, [wCurKeys1]
+    and a, PADF_B
+    ret z
+    ; Check cooldown
+    ld a, [wDashCooldown1]
+    cp a, 0
+    ret nz
+    ld a, [wPlayer1Speed]
+    ld b, a
+    ld a, 6
+    sub a, b
+    ld [wDashTimer1], a
+    add a, 60
+    ld [wDashCooldown1], a
+    ld a, [wFacesLeft1]
+    cp a, 0
+    jp z, DashRight1
+    ld a, -3
+    ld [wDashAmount1], a
+    ret
+DashRight1:
+    ld a, 3
+    ld [wDashAmount1], a
     ret
 
 ; Check if a pixel intersects with player's hitbox
@@ -936,37 +997,65 @@ ResetPlayer2:
 ; Move if an arrow key was pressed
 CheckMovement2:
 
-; Check stun
-ld a, [wPlayerStun2]
-cp a, 0
-jp z, CheckLeft2
-dec a
-ld [wPlayerStun2], a
-ld hl, 1
-add hl, de
-ld a, [hl]
-ld b, a
-ld a, [wKBDirection2]
-add a, b
-ld [hl], a
-ret
+    ; Decrease dash cooldown
+    ld a, [wDashCooldown2]
+    cp a, 0
+    jp z, NoCooldown2
+    dec a
+    ld [wDashCooldown2], a
+NoCooldown2:
+    ; Check stun
+    ld a, [wPlayerStun2]
+    cp a, 0
+    jp z, CheckDash2
+    dec a
+    ld [wPlayerStun2], a
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    ld b, a
+    ld a, [wKBDirection2]
+    add a, b
+    ld [hl], a
+    ret
+
+CheckDash2:
+    ; Check dash
+    ld a, [wDashTimer2]
+    cp a, 0
+    jp z, CheckLeft2
+    dec a
+    ld [wDashTimer2], a
+    ld hl, 1
+    add hl, de
+    ld a, [hl]
+    ld b, a
+    ld a, [wDashAmount2]
+    add a, b
+    ld [hl], a
+    ret
 
 ; Check the left button.
 CheckLeft2:
+    call CheckA2
+    call CheckB2
     ld a, [wCurKeys2]
     and a, PADF_LEFT
     jp z, CheckRight2
 Left2:
     ; Check if already facing left
-    ld hl, 3
-    add hl, de
-    ld a, [hl]
-    bit 5, a  ; Check if horizontal flip bit is already set
+    ld a, [wFacesLeft2]
+    cp a, 0
     jr nz, .alreadyFacingLeft
     
     ; If not already facing left, set the horizontal flip flag and adjust position
+    ld hl, 3
+    add hl, de
     or a, %00100000  ; Set horizontal flip bit (bit 5)
     ld [hl], a
+
+    ld a, 1
+    ld [wFacesLeft2], a
     
     ; Adjust X position to account for sprite flip (move 4 pixels left)
     ld hl, 1
@@ -1006,15 +1095,18 @@ CheckRight2:
     jp z, CheckUp2
 Right2:
     ; Check if already facing right
-    ld hl, 3
-    add hl, de
-    ld a, [hl]
-    bit 5, a  ; Check if horizontal flip bit is set
+    ld a, [wFacesLeft2]
+    cp a, 0
     jr z, .alreadyFacingRight
     
     ; If not already facing right, clear the horizontal flip flag and adjust position
+    ld hl, 3
+    add hl, de
     and a, %11011111  ; Clear horizontal flip bit (bit 5)
     ld [hl], a
+
+    xor a
+    ld [wFacesLeft2], a
     
     ; Adjust X position to account for sprite flip (move 4 pixels right)
     ld hl, 1
@@ -1146,9 +1238,7 @@ CheckA2:
     sub a, b
     ld b, a
     ; Check direction
-    ld hl, 3
-    add hl, de
-    ld a, [hl]
+    ld a, [wFacesLeft2]
     cp a, 0
     jp nz, FacesLeft2
     ; Faces right
@@ -1237,6 +1327,32 @@ SetDefaultSprite2:
     ld a, [CSSselectionState2]                        ; Set tile ID to 0 (default sprite)
     ld [hli], a
     xor a
+    ret
+
+CheckB2:
+    ld a, [wCurKeys2]
+    and a, PADF_B
+    ret z
+    ; Check cooldown
+    ld a, [wDashCooldown2]
+    cp a, 0
+    ret nz
+    ld a, [wPlayer2Speed]
+    ld b, a
+    ld a, 6
+    sub a, b
+    ld [wDashTimer2], a
+    add a, 60
+    ld [wDashCooldown2], a
+    ld a, [wFacesLeft2]
+    cp a, 0
+    jp z, DashRight2
+    ld a, -3
+    ld [wDashAmount2], a
+    ret
+DashRight2:
+    ld a, 3
+    ld [wDashAmount2], a
     ret
 
 ; Check if a pixel intersects with player's hitbox
@@ -1530,14 +1646,6 @@ IsBaseTile:
     ret z
     cp a, $BD
     ret 
-
-UpdateSprite1:
-    call CheckA1
-    ret
-
-UpdateSprite2:
-    call CheckA2
-    ret
 
 UpdatePlayerIndicators:
     ; Player 1 indicator (at wShadowOAM + 48)
@@ -1903,6 +2011,10 @@ wPlayerHitbox1: db
 wPlayerLives1: db
 wPlayerStun1: db
 wKBDirection1: db
+wFacesLeft1: db
+wDashTimer1: db
+wDashCooldown1: db
+wDashAmount1: db
 
 SECTION "Player 1 Stats", WRAM0
 wPlayer1AttackMin: db
@@ -1930,6 +2042,10 @@ wPlayerHitbox2: db
 wPlayerLives2: db
 wPlayerStun2: db
 wKBDirection2: db
+wFacesLeft2: db
+wDashTimer2: db
+wDashCooldown2: db
+wDashAmount2: db
 
 SECTION "HP Data", WRAM0
 wPlayer1HP:: db
