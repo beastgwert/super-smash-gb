@@ -557,14 +557,14 @@ CheckDown1:
     ret z
 Down1:
     ; Move down if on the ground
-    ld h, d
-    ld l, e
-    ld a, [hli]
-    ld c, a
-    ld a, [hl]
-    ld b, a
-    call IsGrounded
-    ret nz
+    ; ld h, d
+    ; ld l, e
+    ; ld a, [hli]
+    ; ld c, a
+    ; ld a, [hl]
+    ; ld b, a
+    ; call IsGrounded
+    ; ret nz
     ; Do not move down if on the base tile
     ld h, d
     ld l, e
@@ -1201,8 +1201,8 @@ Down2:
     ld c, a
     ld a, [hl]
     ld b, a
-    call IsGrounded
-    ret nz
+    ; call IsGrounded
+    ; ret nz
     ; Do not move down if on the base tile
     ld h, d
     ld l, e
@@ -2073,7 +2073,7 @@ SECTION "Math", ROM0
 ; x[i + 1] = x[i] * 0x01010101 + 0xB3B3B3B3
 ; @return A=B=state bits 31-24 (which have the best entropy),
 ; C=state bits 23-16, HL trashed
-rand::
+rand:
   ; Add 0xB3 then multiply by 0x01010101
   ld hl, randstate+0
   ld a, [hl]
