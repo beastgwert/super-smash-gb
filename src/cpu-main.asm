@@ -618,7 +618,7 @@ Down1:
     ld h, d
     ld l, e
     ld a, [hl]
-    add a, 2
+    add a, 1
     ld [hl], a
     ret
 
@@ -1321,12 +1321,12 @@ CheckDown2:
     ret z
 Down2:
     ; Move down if on the ground
-    ld h, d
-    ld l, e
-    ld a, [hli]
-    ld c, a
-    ld a, [hl]
-    ld b, a
+    ; ld h, d
+    ; ld l, e
+    ; ld a, [hli]
+    ; ld c, a
+    ; ld a, [hl]
+    ; ld b, a
     ; call IsGrounded
     ; ret nz
     ; Do not move down if on the base tile
@@ -1341,7 +1341,7 @@ Down2:
     ld h, d
     ld l, e
     ld a, [hl]
-    add a, 2
+    add a, 1
     ld [hl], a
     ret
 

@@ -35,11 +35,9 @@ CSSTextWaitVBlank:
     ld [rOBP0], a
 
 CSSTextMain:
-    ; Check the current keys every frame and move left or right.
     ldh a, [rLY]
 	cp 144
 	jp nc, CSSTextMain
-
 
 CSSTextWaitVBlank2:
 	ldh a, [rLY]

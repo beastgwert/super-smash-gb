@@ -6,6 +6,7 @@ INCLUDE "utils/sprobjs_lib.asm"
 INCLUDE "character-selection.asm"
 INCLUDE "utils/sgb-utils.asm"
 INCLUDE "background-music.asm"
+INCLUDE "ending.asm"
 
 SECTION "Header", ROM0[$100]
 
@@ -398,8 +399,8 @@ HitsCeiling1:
 ResetPlayer1:
     ld a, [wPlayerLives1]
     dec a
-    jp z, CSSEntryPoint
     ld [wPlayerLives1], a
+    jp z, EndingScreen
     ld h, d
     ld l, e
     ld a, 0
@@ -632,6 +633,8 @@ Down1:
     ld a, [hl]
     add a, 1
     ld [hl], a
+    xor a
+    ld [wInverseVelocity1], a
     ret
 
 ; When A is pressed, toggle between default sprite (tile 0) and attack sprite (tile 2)
@@ -1140,8 +1143,8 @@ HitsCeiling2:
 ResetPlayer2:
     ld a, [wPlayerLives2]
     dec a
-    jp z, CSSEntryPoint
     ld [wPlayerLives2], a
+    jp z, EndingScreen
     ld h, d
     ld l, e
     ld a, 0
