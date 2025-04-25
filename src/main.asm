@@ -702,6 +702,15 @@ NoOverflow1:
     ld [wPlayer2HP], a
 
     ; Apply knockback
+    cp a, 50
+    jp c, NoDouble1
+    srl a
+    ld b, a
+    ld a, [wKBDirection2]
+    add a, a
+    ld [wKBDirection2], a
+    ld a, b
+NoDouble1:
     ld [wPlayerStun2], a
     xor a
     ld [wPlayerDirection2], a
@@ -1445,6 +1454,15 @@ NoOverflow2:
     ld [wPlayer1HP], a
 
     ; Apply knockback
+    cp a, 50
+    jp c, NoDouble2
+    srl a
+    ld b, a
+    ld a, [wKBDirection1]
+    add a, a
+    ld [wKBDirection1], a
+    ld a, b
+NoDouble2:
     ld [wPlayerStun1], a
     xor a
     ld [wPlayerDirection1], a
