@@ -2322,13 +2322,13 @@ wCurKeys2: db
 wNewKeys2: db
 
 SECTION "Player 1 Data", WRAM0
-wPlayerDirection1: db
-wFrameCounter1: db
-wInverseVelocity1: db
-wGravityCounter1: db
+wPlayerDirection1: db ; 0 = up, 1 = down
+wFrameCounter1: db ; updates position @ velocity
+wInverseVelocity1: db ; frames/2 pixels up or down
+wGravityCounter1: db ; updates velocity @ 6 - velocity
 wSpeedCounter1: db
-wSpriteChangeTimer1: db  ; Timer for sprite change
-wOriginalTile1: db       ; Store the original tile ID
+wSpriteChangeTimer1: db
+wOriginalTile1: db
 wPlayerLives1: db
 wPlayerStun1: db
 wKBDirection1: db
@@ -2338,23 +2338,24 @@ wDashCooldown1: db
 wDashAmount1: db
 wPlayer1JumpCount: db
 
+; Vary based on character
 SECTION "Player 1 Stats", WRAM0
 wPlayer1AttackMin: db
 wPlayer1AttackRange: db
 wPlayer1Defense: db
 wPlayer1Speed: db
-wPlayer1HitboxX: db ; (x - 1, x + width - 1] X
-wPlayer1Width: db ; (bottom - height, bottom] is hitbox
-wPlayer1Height: db ; when facing right
+wPlayer1HitboxX: db
+wPlayer1Width: db
+wPlayer1Height: db
 
 SECTION "Player 2 Stats", WRAM0
 wPlayer2AttackMin: db
 wPlayer2AttackRange: db
 wPlayer2Defense: db
 wPlayer2Speed: db
-wPlayer2HitboxX: db ; (right - x - width - 1, right - x - 1] X
-wPlayer2Width: db ; (bottom - height, bottom] is hitbox
-wPlayer2Height: db ; when facing left
+wPlayer2HitboxX: db
+wPlayer2Width: db
+wPlayer2Height: db
 
 SECTION "Player 2 Data", WRAM0
 wPlayerDirection2: db
