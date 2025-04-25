@@ -118,10 +118,6 @@ WaitVBlank:
     ld a, 1
     ld [wFacesLeft1], a
 
-    ld a, 16
-    ld [wPlayerHitbox1], a
-    ld [wPlayerHitbox2], a
-
     ld a, 3
     ld [wPlayerLives1], a
     ld [wPlayerLives2], a
@@ -705,6 +701,15 @@ NoOverflow1:
     ld [wPlayer2HP], a
 
     ; Apply knockback
+    cp a, 50
+    jp c, NoDouble1
+    srl a
+    ld b, a
+    ld a, [wKBDirection2]
+    add a, a
+    ld [wKBDirection2], a
+    ld a, b
+NoDouble1:
     ld [wPlayerStun2], a
     xor a
     ld [wPlayerDirection2], a
@@ -1448,6 +1453,15 @@ NoOverflow2:
     ld [wPlayer1HP], a
 
     ; Apply knockback
+    cp a, 50
+    jp c, NoDouble2
+    srl a
+    ld b, a
+    ld a, [wKBDirection1]
+    add a, a
+    ld [wKBDirection1], a
+    ld a, b
+NoDouble2:
     ld [wPlayerStun1], a
     xor a
     ld [wPlayerDirection1], a
@@ -2311,40 +2325,40 @@ wCurKeys2: db
 wNewKeys2: db
 
 SECTION "Player 1 Data", WRAM0
-wPlayerDirection1: db
-wFrameCounter1: db
-wInverseVelocity1: db
-wGravityCounter1: db
+wPlayerDirection1: db ; 0 = up, 1 = down
+wFrameCounter1: db ; updates position @ velocity
+wInverseVelocity1: db ; frames/2 pixels up or down
+wGravityCounter1: db ; updates velocity @ 6 - velocity
 wSpeedCounter1: db
-wSpriteChangeTimer1: db  ; Timer for sprite change
-wOriginalTile1: db       ; Store the original tile ID
-wPlayerHitbox1: db
+wSpriteChangeTimer1: db ; attack
+wOriginalTile1: db
 wPlayerLives1: db
-wPlayerStun1: db
+wPlayerStun1: db ; knockback
 wKBDirection1: db
 wFacesLeft1: db
-wDashTimer1: db
+wDashTimer1: db ; dash
 wDashCooldown1: db
 wDashAmount1: db
-wPlayer1JumpCount: db
+wPlayer1JumpCount: db ; double jump
 
+; Vary based on character
 SECTION "Player 1 Stats", WRAM0
 wPlayer1AttackMin: db
 wPlayer1AttackRange: db
 wPlayer1Defense: db
 wPlayer1Speed: db
-wPlayer1HitboxX: db ; (x - 1, x + width - 1] X
-wPlayer1Width: db ; (bottom - height, bottom] is hitbox
-wPlayer1Height: db ; when facing right
+wPlayer1HitboxX: db
+wPlayer1Width: db
+wPlayer1Height: db
 
 SECTION "Player 2 Stats", WRAM0
 wPlayer2AttackMin: db
 wPlayer2AttackRange: db
 wPlayer2Defense: db
 wPlayer2Speed: db
-wPlayer2HitboxX: db ; (right - x - width - 1, right - x - 1] X
-wPlayer2Width: db ; (bottom - height, bottom] is hitbox
-wPlayer2Height: db ; when facing left
+wPlayer2HitboxX: db
+wPlayer2Width: db
+wPlayer2Height: db
 
 SECTION "Player 2 Data", WRAM0
 wPlayerDirection2: db
@@ -2354,7 +2368,6 @@ wGravityCounter2: db
 wSpeedCounter2: db
 wSpriteChangeTimer2: db  ; Timer for sprite change
 wOriginalTile2: db       ; Store the original tile ID
-wPlayerHitbox2: db
 wPlayerLives2: db
 wPlayerStun2: db
 wKBDirection2: db
