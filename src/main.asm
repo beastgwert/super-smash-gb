@@ -343,9 +343,28 @@ MovesUp1:
     ld l, e
     ld a, [hl]
     sub a, 2
-    jp nc, NotAboveScreen1
+    jp c, AboveScreen1
+    ld c, a
+    inc hl
+    ld a, [hl]
+    add a, 4
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsBaseTile
+    ld a, c
+    jp nz, UpdateUp1
+    ; Reset velocity
     xor a
-NotAboveScreen1:
+    ld [wInverseVelocity1], a
+    ld [wFrameCounter1], a
+    ld [wGravityCounter1], a
+    ret
+AboveScreen1:
+    xor a
+UpdateUp1:
+    ld h, d
+    ld l, e
     ld [hl], a
     ; Update velocity
     ld a, [wInverseVelocity1]
@@ -1066,9 +1085,28 @@ MovesUp2:
     ld l, e
     ld a, [hl]
     sub a, 2
-    jp nc, NotAboveScreen2
+    jp c, AboveScreen2
+    ld c, a
+    inc hl
+    ld a, [hl]
+    add a, 4
+    ld b, a
+    call GetTileByPixel
+    ld a, [hl]
+    call IsBaseTile
+    ld a, c
+    jp nz, UpdateUp2
+    ; Reset velocity
     xor a
-NotAboveScreen2:
+    ld [wInverseVelocity2], a
+    ld [wFrameCounter2], a
+    ld [wGravityCounter2], a
+    ret
+AboveScreen2:
+    xor a
+UpdateUp2:
+    ld h, d
+    ld l, e
     ld [hl], a
     ; Update velocity
     ld a, [wInverseVelocity2]
