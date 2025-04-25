@@ -186,9 +186,9 @@ Neil1:
     ld [wPlayer1Height], a
     ret
 Krill1:
-    ld a, 30
+    ld a, 255
     ld [wPlayer1AttackMin], a
-    ld a, 32
+    ld a, 1
     ld [wPlayer1AttackRange], a
     ld a, 0
     ld [wPlayer1Defense], a
@@ -939,9 +939,9 @@ Neil2:
     ld [wPlayer2Height], a
     ret
 Krill2:
-    ld a, 30
+    ld a, 255
     ld [wPlayer2AttackMin], a
-    ld a, 32
+    ld a, 1
     ld [wPlayer2AttackRange], a
     ld a, 0
     ld [wPlayer2Defense], a
