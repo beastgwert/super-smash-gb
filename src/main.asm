@@ -2327,16 +2327,16 @@ wFrameCounter1: db ; updates position @ velocity
 wInverseVelocity1: db ; frames/2 pixels up or down
 wGravityCounter1: db ; updates velocity @ 6 - velocity
 wSpeedCounter1: db
-wSpriteChangeTimer1: db
+wSpriteChangeTimer1: db ; attack
 wOriginalTile1: db
 wPlayerLives1: db
-wPlayerStun1: db
+wPlayerStun1: db ; knockback
 wKBDirection1: db
 wFacesLeft1: db
-wDashTimer1: db
+wDashTimer1: db ; dash
 wDashCooldown1: db
 wDashAmount1: db
-wPlayer1JumpCount: db
+wPlayer1JumpCount: db ; double jump
 
 ; Vary based on character
 SECTION "Player 1 Stats", WRAM0
