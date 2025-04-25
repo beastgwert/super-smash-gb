@@ -117,10 +117,6 @@ WaitVBlank:
     ld a, 1
     ld [wFacesLeft1], a
 
-    ld a, 16
-    ld [wPlayerHitbox1], a
-    ld [wPlayerHitbox2], a
-
     ld a, 3
     ld [wPlayerLives1], a
     ld [wPlayerLives2], a
@@ -2333,7 +2329,6 @@ wGravityCounter1: db
 wSpeedCounter1: db
 wSpriteChangeTimer1: db  ; Timer for sprite change
 wOriginalTile1: db       ; Store the original tile ID
-wPlayerHitbox1: db
 wPlayerLives1: db
 wPlayerStun1: db
 wKBDirection1: db
@@ -2369,7 +2364,6 @@ wGravityCounter2: db
 wSpeedCounter2: db
 wSpriteChangeTimer2: db  ; Timer for sprite change
 wOriginalTile2: db       ; Store the original tile ID
-wPlayerHitbox2: db
 wPlayerLives2: db
 wPlayerStun2: db
 wKBDirection2: db
