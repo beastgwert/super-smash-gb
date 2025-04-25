@@ -126,6 +126,7 @@ ProximityCheck:
         ld d, 0
         jr .return
     .too_close
+        ; call DASH_KEY
         ld d, 1
     .return
     ret
@@ -183,9 +184,9 @@ Chase:
     cp b
 
     jr c, .left_wards
-        ld a, d
-        cp 1
-        jr z, .true_left
+        ; ld a, d
+        ; cp 1
+        ; jr z, .true_left
         .true_right
         call RIGHT_KEY
         jr .check_vertical
