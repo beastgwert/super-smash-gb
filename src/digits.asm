@@ -1,3 +1,6 @@
+
+; Graphics for digits taken from https://github.com/gbdev/gb-asm-tutorial/blob/master/unbricked/bcd/digit-tileset.asm
+
 INCLUDE "hardware.inc"
 
 SECTION "Digits", ROM0
