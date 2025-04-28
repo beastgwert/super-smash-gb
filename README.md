@@ -16,7 +16,8 @@ We recommend installing the [Sameboy](https://sameboy.github.io/downloads/) emul
 
 Feel free to also change the palette colors in Sameboy Settings > Video
 
-If you want to try facing off against our bot, you can skip the instructions above and just open super-smash-cpu.gb
+## Single Player
+If you want to try facing off against our bot, run `make cpu` and open super-smash-cpu.gb
 
 ## Gameplay
 
