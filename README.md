@@ -10,10 +10,13 @@ We recommend installing the [Sameboy](https://sameboy.github.io/downloads/) emul
 - Select and open both super-smash.gb and super-smash-sub.gb in Sameboy
 - Navigate to Connectivity > Game Link Cable & Infrared and select the other .gb file
     - The game is played in the super-smash.gb window
+- Navigate to Emulation > Reset
 - Configure controls for Player 1 and Player 2 in Sameboy Settings
     - A is attack, B is dash
 
 Feel free to also change the palette colors in Sameboy Settings > Video
+
+If you want to try facing off against our bot, you can skip the instructions above and just open super-smash-cpu.gb
 
 ## Gameplay
 
