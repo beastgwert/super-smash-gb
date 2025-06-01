@@ -21,6 +21,7 @@ CSSWaitVBlank:
 	xor a
 	ld [rLCDC], a
 
+    call InitializeSound
     ld b, 0
     call InitializeCharacterSelectionBackground
     call InitializeCharacters
@@ -56,6 +57,7 @@ CSSClearOam:
 
 CSSMain:
     ; Check the current keys every frame and move left or right.
+    call UpdateMusic
     call CSSUpdateKeys
     ldh a, [rLY]
 	cp 144

@@ -7,6 +7,7 @@ INCLUDE "character-selection.asm"
 INCLUDE "utils/sgb-utils.asm"
 INCLUDE "background-music.asm"
 INCLUDE "ending.asm"
+INCLUDE "main-music.asm"
 
 SECTION "Header", ROM0[$100]
 
@@ -26,7 +27,7 @@ WaitVBlank:
 	xor a
 	ld [rLCDC], a
 
-    call InitializeSound
+    call InitSound
 
     call InitializeBackground
 
@@ -128,7 +129,7 @@ WaitVBlank:
 Main:
     call ResetShadowOAM
 
-    call UpdateMusic
+    call UpdateChords
 
     ; Check the current keys every frame.
     call UpdateKeys
@@ -2262,59 +2263,44 @@ ConvertHPToDigits:
     ld [de], a
     ret
 
-; Initialize sound
-InitSound:
-    ; Turn on sound
-    ld a, %10000000
-    ld [$FF26], a    ; Sound on/off register
-    
-    ; Set volume
-    ld a, %01110111
-    ld [$FF24], a    ; Channel control / volume
-    
-    ; Sound panning
-    ld a, %11111111
-    ld [$FF25], a    ; Sound output terminal
-    ret
-
 PlayerHitSound:
     ; Use noise channel (Channel 4) for the hit sound
     ; Set sound length
-    ld a, %00111111  ; Fairly short sound
-    ld [$FF20], a
+    ld a, 0  ; Long sound
+    ld [rAUD4LEN], a
     
     ; Volume envelope (start high, quick decay)
-    ld a, %11110010  ; Start at volume 15, decrease at step 2 (faster decay)
-    ld [$FF21], a
+    ld a, $F3  ; Start at volume 15, no decay
+    ld [rAUD4ENV], a
     
     ; Set noise parameters - lower bits = higher frequency
-    ld a, %01110100  ; Medium-high frequency noise with some randomness
-    ld [$FF22], a
+    ld a, %00010111  ; Medium-high frequency noise with some randomness
+    ld [rAUD4POLY], a
     
     ; Trigger sound
-    ld a, %10000000  ; Trigger bit
-    ld [$FF23], a
+    ld a, $C0  ; Trigger bit
+    ld [rAUD4GO], a
     
-    ; Also add a quick sound on Channel 1 for more impact
-    ; No sweep
-    ld a, %00000000
-    ld [$FF10], a
+    ; ; Also add a quick sound on Channel 1 for more impact
+    ; ; No sweep
+    ; ld a, %00000000
+    ; ld [$FF10], a
     
-    ; Set duty and length
-    ld a, %00111000  ; 75% duty cycle (harsher sound), short length
-    ld [$FF11], a
+    ; ; Set duty and length
+    ; ld a, %00111000  ; 75% duty cycle (harsher sound), short length
+    ; ld [$FF11], a
     
-    ; Set envelope
-    ld a, %11110001  ; Start at volume 15, fast decrease
-    ld [$FF12], a
+    ; ; Set envelope
+    ; ld a, %11110001  ; Start at volume 15, fast decrease
+    ; ld [$FF12], a
     
-    ; Set frequency (lower)
-    ld a, %00001000
-    ld [$FF13], a
+    ; ; Set frequency (lower)
+    ; ld a, %00001000
+    ; ld [$FF13], a
     
-    ; Trigger and set upper freq bits
-    ld a, %11000110  ; Trigger + don't loop + freq bits
-    ld [$FF14], a
+    ; ; Trigger and set upper freq bits
+    ; ld a, %11000110  ; Trigger + don't loop + freq bits
+    ; ld [$FF14], a
     
     ret
 
