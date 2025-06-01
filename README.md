@@ -27,5 +27,5 @@ On the selection screen, use the left and right keys to select a character and p
 
 Each player has 3 lives and you lose a life if you are knocked off the screen. There is also a percentage indicator for each player at the bottom, with higher numbers corresponding to more knockback taken. 
 
-
-
+## Music
+The background music for the character selection screen is AI generated, and the background music for the fight screen is an arrangement of Alkan's Etude WoO.
